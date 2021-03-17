@@ -1,0 +1,14 @@
+{
+    "name": "gioco-plus/async-settled",
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=7.2",
+        "gioco-plus/prism-plus": "dev-master"
+    },
+    "description": "",
+    "autoload": {
+        "psr-4": {
+            "GiocoPlus\\AsyncSettled\\": "src/"
+        }
+    }
+}
