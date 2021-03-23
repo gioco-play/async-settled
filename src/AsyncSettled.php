@@ -4,9 +4,11 @@
 namespace GiocoPlus\AsyncSettled;
 
 
+use Carbon\Carbon;
+use GiocoPlus\Mongodb\MongoDb;
 use GiocoPlus\PrismConst\Constant\TransactionConst;
 use GiocoPlus\PrismPlus\Repository\DbManager;
-use GiocoPlus\PrismPlus\Service\CacheService;
+use Hyperf\Di\Annotation\Inject;
 use MongoDB\BSON\UTCDateTime;
 use Psr\Container\ContainerInterface;
 
@@ -60,12 +62,29 @@ class AsyncSettled
     /**
      * @var string
      */
-    private $col;
+    private $asyncSettledCol;
+
+    /**
+     * @var string
+     */
+    private $prcountFixCol;
+
+    /**
+     * @Inject()
+     * @var MongoDb
+     */
+    protected $mongodb;
+
+    /**
+     * @var string
+     */
+    protected $carbonTimeZone = "Asia/Taipei";
 
     public function __construct(ContainerInterface $container)
     {
         $this->dbManager = $container->get(DbManager::class);
-        $this->col = "async_settled";
+        $this->asyncSettledCol = "async_settled";
+        $this->prcountFixCol = "precount_fix";
     }
 
     /**
@@ -114,13 +133,14 @@ class AsyncSettled
                 "win_amount" => 0,
                 "bet_time" => $stakeTime,
                 "settled_time" => 0,
+                "last_settled_time" => 0,
                 "status" => TransactionConst::STAKE,
                 "updated_at" => new UTCDateTime(),
                 "deleted_at" => "", # 刪除用
                 "created_at" => new UTCDateTime(),
             ];
 
-            $result = $this->dbManager->opMongoDb($this->opCode)->insert($this->col, $record);
+            $result = $this->dbManager->opMongoDb($this->opCode)->insert($this->asyncSettledCol, $record);
             if ($result !== false) {
                 return true;
             }
@@ -141,20 +161,22 @@ class AsyncSettled
         $lastLog = $this->_lastLog();
         if (!empty($lastLog)) {
             if ($hasCreateStake || ($updateTime > $lastLog["update_time"])) {
-                $result = $this->dbManager->opMongoDb($this->opCode)->updateRow($this->col, [
+                $result = $this->dbManager->opMongoDb($this->opCode)->updateRow($this->asyncSettledCol, [
                     "vendor_code" => $this->vendorCode,
                     "player_name" => $this->playerName,
                     "parent_bet_id" => $this->parentBetId,
                     "bet_id" => $this->betId,
                 ], [
-                    "stake_amount" => $stakeAmount,
-                    "payoff_amount" => $payoffAmount,
-                    "payoff_time" => $payoffTime,
-                    "update_time" => $updateTime,
+                    "bet_amount" => $stakeAmount,
+                    "win_amount" => $payoffAmount,
+                    "settled_time" => $payoffTime,
                     "updated_at" => new UTCDateTime(),
                     "status" => TransactionConst::PAYOFF,
                 ]);
                 if ($result !== false) {
+                    if (!empty($lastLog["settled_time"])) {
+                        $this->precountFix($lastLog["settled_time"]);
+                    }
                     return true;
                 }
             }
@@ -171,20 +193,22 @@ class AsyncSettled
         $lastLog = $this->_lastLog();
         if (!empty($lastLog)) {
             if ($hasCreateStake || ($updateTime > $lastLog["update_time"])) {
-                $result = $this->dbManager->opMongoDb($this->opCode)->updateRow($this->col, [
+                $result = $this->dbManager->opMongoDb($this->opCode)->updateRow($this->asyncSettledCol, [
                     "vendor_code" => $this->vendorCode,
                     "player_name" => $this->playerName,
                     "parent_bet_id" => $this->parentBetId,
                     "bet_id" => $this->betId,
                 ], [
-                    "stake_amount" => 0,
-                    "payoff_amount" => 0,
-                    "payoff_time" => $updateTime,
-                    "update_time" =>  $updateTime,
+                    "bet_amount" => 0,
+                    "win_amount" => 0,
+                    "settled_time" => $updateTime,
                     "updated_at" => new UTCDateTime(),
                     "status" => TransactionConst::CANCEL_STAKE,
                 ]);
                 if ($result !== false) {
+                    if (!empty($lastLog["settled_time"])) {
+                        $this->precountFix($lastLog["settled_time"]);
+                    }
                     return true;
                 }
             }
@@ -199,19 +223,21 @@ class AsyncSettled
         $lastLog = $this->_lastLog();
         if (!empty($lastLog)) {
             if ($hasCreateStake || ($updateTime > $lastLog["update_time"])) {
-                $result = $this->dbManager->opMongoDb($this->opCode)->updateRow($this->col, [
+                $result = $this->dbManager->opMongoDb($this->opCode)->updateRow($this->asyncSettledCol, [
                     "vendor_code" => $this->vendorCode,
                     "player_name" => $this->playerName,
                     "parent_bet_id" => $this->parentBetId,
                     "bet_id" => $this->betId,
                 ], [
-                    "payoff_time" => $updateTime,
-                    "update_time" =>  $updateTime,
+                    "settled_time" => $updateTime,
                     "updated_at" => new UTCDateTime(),
                     "status" => TransactionConst::CANCEL_PAYOFF,
                 ]);
 
                 if ($result !== false) {
+                    if (!empty($lastLog["settled_time"])) {
+                        $this->precountFix($lastLog["settled_time"]);
+                    }
                     return true;
                 }
             }
@@ -228,18 +254,20 @@ class AsyncSettled
         $lastLog = $this->_lastLog();
         if (!empty($lastLog)) {
             if ($hasCreateStake || ($updateTime > $lastLog["update_time"])) {
-                $result = $this->dbManager->opMongoDb($this->opCode)->updateRow($this->col, [
+                $result = $this->dbManager->opMongoDb($this->opCode)->updateRow($this->asyncSettledCol, [
                     "vendor_code" => $this->vendorCode,
                     "player_name" => $this->playerName,
                     "parent_bet_id" => $this->parentBetId,
                     "bet_id" => $this->betId,
                 ], [
-                    "stake_amount" => $stakeAmount,
-                    "update_time" =>  $updateTime,
+                    "bet_amount" => $stakeAmount,
                     "updated_at" => new UTCDateTime(),
                     "status" => 'restake',
                 ]);
                 if ($result !== false) {
+                    if (!empty($lastLog["settled_time"])) {
+                        $this->precountFix($lastLog["settled_time"]);
+                    }
                     return true;
                 }
             }
@@ -258,6 +286,24 @@ class AsyncSettled
         return (!empty($log[0])) ? $log[0] : null;
     }
 
-
+    /**
+     * 觸發修正 precount
+     * @param int $lastSettledTime
+     */
+    private function precountFix(int $lastSettledTime)
+    {
+        # 與現在時間差距 1 小的忽略
+        $now = Carbon::now($this->carbonTimeZone);
+        $lst = Carbon::createFromTimestamp($lastSettledTime, $this->carbonTimeZone);
+        if ($lst->lt($now->copy()->startOfHour()->subHour(1))) {
+            $this->mongodb->setPool("default")->insert($this->prcountFixCol, [
+                "type" => "settled",
+                "op_code" => $this->opCode,
+                "parent_bet_id" => $this->parentBetId,
+                "bet_id" => $this->betId,
+                "time" => $lastSettledTime,
+            ]);
+        }
+    }
 
 }
