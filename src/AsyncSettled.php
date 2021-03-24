@@ -174,7 +174,7 @@ class AsyncSettled
                     "status" => TransactionConst::PAYOFF,
                 ]);
                 if ($result !== false) {
-                    if (!empty($lastLog["settled_time"])) {
+                    if (!empty($lastLog)) {
                         $this->precountFix($lastLog["settled_time"]);
                     }
                     return true;
@@ -206,7 +206,7 @@ class AsyncSettled
                     "status" => TransactionConst::CANCEL_STAKE,
                 ]);
                 if ($result !== false) {
-                    if (!empty($lastLog["settled_time"])) {
+                    if (!empty($lastLog)) {
                         $this->precountFix($lastLog["settled_time"]);
                     }
                     return true;
@@ -235,7 +235,7 @@ class AsyncSettled
                 ]);
 
                 if ($result !== false) {
-                    if (!empty($lastLog["settled_time"])) {
+                    if (!empty($lastLog)) {
                         $this->precountFix($lastLog["settled_time"]);
                     }
                     return true;
@@ -265,7 +265,7 @@ class AsyncSettled
                     "status" => 'restake',
                 ]);
                 if ($result !== false) {
-                    if (!empty($lastLog["settled_time"])) {
+                    if (!empty($lastLog)) {
                         $this->precountFix($lastLog["settled_time"]);
                     }
                     return true;
@@ -288,22 +288,33 @@ class AsyncSettled
 
     /**
      * 觸發修正 precount
-     * @param int $lastSettledTime
+     * @param array $lastLog
      */
-    private function precountFix(int $lastSettledTime)
+    private function precountFix(array $lastLog)
     {
-        # 與現在時間差距 1 小的忽略
-        $now = Carbon::now($this->carbonTimeZone);
-        $lst = Carbon::createFromTimestamp($lastSettledTime, $this->carbonTimeZone);
-        if ($lst->lt($now->copy()->startOfHour()->subHour(1))) {
-            $this->mongodb->setPool("default")->insert($this->prcountFixCol, [
-                "type" => "settled",
-                "op_code" => $this->opCode,
-                "parent_bet_id" => $this->parentBetId,
-                "bet_id" => $this->betId,
-                "time" => $lastSettledTime,
-            ]);
+        if (!empty($lastLog["settled_time"])) {
+            # 與現在時間差距 1 小的忽略
+            $now = Carbon::now($this->carbonTimeZone);
+            $lst = Carbon::createFromTimestamp($lastLog["settled_time"], $this->carbonTimeZone);
+            if ($lst->lt($now->copy()->startOfHour()->subHour(1))) {
+                $this->mongodb->setPool("default")->insert($this->prcountFixCol, [
+                    "type" => "settled",
+                    "op_code" => $this->opCode,
+                    "vendor_code" => $this->vendorCode,
+                    "parent_bet_id" => $this->parentBetId,
+                    "bet_id" => $this->betId,
+                    "player_name" => $lastLog["player_name"],
+                    "bet_amount" => $lastLog["bet_amount"],
+                    "win_amount" => $lastLog["win_amount"],
+                    "game_code" => $lastLog["game_code"],
+                    "time" => date("Y-m-d H", $lastLog["settled_time"]),
+                    "created_at" => new UTCDateTime()
+                ]);
+            }
         }
+
+
+
     }
 
 }
