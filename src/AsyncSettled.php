@@ -133,11 +133,10 @@ class AsyncSettled
                 "win_amount" => 0,
                 "bet_time" => $stakeTime,
                 "settled_time" => 0,
-                "last_settled_time" => 0,
                 "status" => TransactionConst::STAKE,
+                "created_at" => new UTCDateTime(),
                 "updated_at" => new UTCDateTime(),
                 "deleted_at" => "", # 刪除用
-                "created_at" => new UTCDateTime(),
             ];
 
             $result = $this->dbManager->opMongoDb($this->opCode)->insert($this->asyncSettledCol, $record);
