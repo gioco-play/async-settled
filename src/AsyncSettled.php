@@ -119,7 +119,7 @@ class AsyncSettled
     {
         $this->lastLog = $this->_lastLog();
 
-        if (!empty($this->lastLog)) {
+        if (empty($this->lastLog)) {
             $updateTime = micro_timestamp();
 
             $record = [
