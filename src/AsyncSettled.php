@@ -177,7 +177,7 @@ class AsyncSettled
                 ]);
                 if ($result !== false) {
                     if (!empty($lastLog)) {
-                        $this->precountFix($lastLog["settled_time"]);
+                        $this->precountFix($lastLog);
                     }
                     return true;
                 }
@@ -215,7 +215,7 @@ class AsyncSettled
                 ]);
                 if ($result !== false) {
                     if (!empty($lastLog)) {
-                        $this->precountFix($lastLog["settled_time"]);
+                        $this->precountFix($lastLog);
                     }
                     return true;
                 }
@@ -251,7 +251,7 @@ class AsyncSettled
 
                 if ($result !== false) {
                     if (!empty($lastLog)) {
-                        $this->precountFix($lastLog["settled_time"]);
+                        $this->precountFix($lastLog);
                     }
                     return true;
                 }
@@ -287,7 +287,7 @@ class AsyncSettled
                 ]);
                 if ($result !== false) {
                     if (!empty($lastLog)) {
-                        $this->precountFix($lastLog["settled_time"]);
+                        $this->precountFix($lastLog);
                     }
                     return true;
                 }
