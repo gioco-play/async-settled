@@ -162,7 +162,7 @@ class AsyncSettled
 
         $lastLog = $this->_lastLog();
         if (!empty($lastLog)) {
-            if ($hasCreateStake || ($updateTime > $lastLog["update_time"])) {
+            if ($hasCreateStake || ($updateTime > $lastLog["settled_time"])) {
                 $result = $this->dbManager->opMongoDb($this->opCode)->updateRow($this->asyncSettledCol, [
                     "vendor_code" => $this->vendorCode,
                     "player_name" => $this->playerName,
@@ -200,7 +200,7 @@ class AsyncSettled
 
         $lastLog = $this->_lastLog();
         if (!empty($lastLog)) {
-            if ($hasCreateStake || ($updateTime > $lastLog["update_time"])) {
+            if ($hasCreateStake || ($updateTime > $lastLog["settled_time"])) {
                 $result = $this->dbManager->opMongoDb($this->opCode)->updateRow($this->asyncSettledCol, [
                     "vendor_code" => $this->vendorCode,
                     "player_name" => $this->playerName,
@@ -237,7 +237,7 @@ class AsyncSettled
 
         $lastLog = $this->_lastLog();
         if (!empty($lastLog)) {
-            if ($hasCreateStake || ($updateTime > $lastLog["update_time"])) {
+            if ($hasCreateStake || ($updateTime > $lastLog["settled_time"])) {
                 $result = $this->dbManager->opMongoDb($this->opCode)->updateRow($this->asyncSettledCol, [
                     "vendor_code" => $this->vendorCode,
                     "player_name" => $this->playerName,
@@ -274,7 +274,7 @@ class AsyncSettled
 
         $lastLog = $this->_lastLog();
         if (!empty($lastLog)) {
-            if ($hasCreateStake || ($updateTime > $lastLog["update_time"])) {
+            if ($hasCreateStake || ($updateTime > $lastLog["settled_time"])) {
                 $result = $this->dbManager->opMongoDb($this->opCode)->updateRow($this->asyncSettledCol, [
                     "vendor_code" => $this->vendorCode,
                     "player_name" => $this->playerName,
