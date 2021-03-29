@@ -149,12 +149,15 @@ class AsyncSettled
 
     /**
      * @param float $stakeAmount
+     * @param int $stakeTime
      * @param float $payoffAmount
      * @param int $payoffTime
+     * @return bool
+     * @throws \GiocoPlus\Mongodb\Exception\MongoDBException
      */
-    public function payoff(float $stakeAmount, float $payoffAmount, int $payoffTime)
+    public function payoff(float $stakeAmount, int $stakeTime, float $payoffAmount, int $payoffTime)
     {
-        $hasCreateStake = $this->stake($stakeAmount, $payoffTime);
+        $hasCreateStake = $this->stake($stakeAmount, $stakeTime);
         $updateTime = $payoffTime;
 
         $lastLog = $this->_lastLog();
@@ -184,6 +187,12 @@ class AsyncSettled
         return false;
     }
 
+    /**
+     * @param int $stakeTime
+     * @param int $payoffTime
+     * @return bool
+     * @throws \GiocoPlus\Mongodb\Exception\MongoDBException
+     */
     public function cancelStake(int $stakeTime, int $payoffTime)
     {
         $hasCreateStake = $this->stake(0, $stakeTime);
@@ -215,6 +224,13 @@ class AsyncSettled
         return false;
     }
 
+    /**
+     * @param float $stakeAmount
+     * @param int $stakeTime
+     * @param int $updateTime
+     * @return bool
+     * @throws \GiocoPlus\Mongodb\Exception\MongoDBException
+     */
     public function cancelPayoff(float $stakeAmount, int $stakeTime, int $updateTime)
     {
         $hasCreateStake = $this->stake($stakeAmount, $stakeTime);
@@ -245,6 +261,12 @@ class AsyncSettled
         return false;
     }
 
+    /**
+     * @param float $stakeAmount
+     * @param int $stakeTime
+     * @return bool
+     * @throws \GiocoPlus\Mongodb\Exception\MongoDBException
+     */
     public function reStake(float $stakeAmount, int $stakeTime)
     {
         $hasCreateStake = $this->stake($stakeAmount, $stakeTime);
@@ -274,6 +296,7 @@ class AsyncSettled
         return false;
     }
 
+
     private function _lastLog()
     {
         $log = $this->dbManager->opMongoDb($this->opCode)->fetchAll("settlement", [
@@ -288,6 +311,8 @@ class AsyncSettled
     /**
      * 觸發修正 precount
      * @param array $lastLog
+     * @return bool
+     * @throws \GiocoPlus\Mongodb\Exception\MongoDBException
      */
     private function precountFix(array $lastLog)
     {
@@ -309,11 +334,10 @@ class AsyncSettled
                     "time" => date("Y-m-d H", $lastLog["settled_time"]),
                     "created_at" => new UTCDateTime()
                 ]);
+                return true;
             }
         }
-
-
-
+        return false;
     }
 
 }
