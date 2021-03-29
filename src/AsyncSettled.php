@@ -299,7 +299,7 @@ class AsyncSettled
 
     private function _lastLog()
     {
-        $log = $this->dbManager->opMongoDb($this->opCode)->fetchAll("settlement", [
+        $log = $this->dbManager->opMongoDb($this->opCode)->fetchAll($this->asyncSettledCol, [
             "vendor_code" => $this->vendorCode,
             "player_name" => $this->playerName,
             "parent_bet_id" => $this->parentBetId,
