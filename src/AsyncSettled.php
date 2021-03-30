@@ -336,7 +336,7 @@ class AsyncSettled
                     "bet_amount" => $lastLog["bet_amount"],
                     "win_amount" => $lastLog["win_amount"],
                     "game_code" => $lastLog["game_code"],
-                    "time" => date("Y-m-d H", substr($lastLog["settled_time"], 0, 10)), # 待修 13 需轉 10 位
+                    "time" => date("Y-m-d H", substr($lastLog["settled_time"], 0, 10)),
                     "created_at" => new UTCDateTime()
                 ];
                 $this->mongodb->setPool($this->mongoDefaultPool)->insert($this->prcountFixCol, $pfRecord);
