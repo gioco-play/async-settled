@@ -70,10 +70,14 @@ class AsyncSettled
     private $prcountFixCol;
 
     /**
-     * @Inject()
      * @var MongoDb
      */
     protected $mongodb;
+
+    /**
+     * @var string
+     */
+    private $mongoDefaultPool = 'default';
 
     /**
      * @var string
@@ -83,6 +87,7 @@ class AsyncSettled
     public function __construct(ContainerInterface $container)
     {
         $this->dbManager = $container->get(DbManager::class);
+        $this->mongodb = $container->get(MongoDb::class);
         $this->asyncSettledCol = "async_settled";
         $this->prcountFixCol = "precount_fix";
     }
@@ -321,7 +326,7 @@ class AsyncSettled
             $now = Carbon::now($this->carbonTimeZone);
             $lst = Carbon::createFromTimestamp($lastLog["settled_time"], $this->carbonTimeZone);
             if ($lst->lt($now->copy()->startOfHour()->subHour(1))) {
-                $this->mongodb->setPool("default")->insert($this->prcountFixCol, [
+                $pfRecord = [
                     "type" => "settled",
                     "op_code" => $this->opCode,
                     "vendor_code" => $this->vendorCode,
@@ -331,9 +336,11 @@ class AsyncSettled
                     "bet_amount" => $lastLog["bet_amount"],
                     "win_amount" => $lastLog["win_amount"],
                     "game_code" => $lastLog["game_code"],
-                    "time" => date("Y-m-d H", $lastLog["settled_time"]),
+                    "time" => date("Y-m-d H", substr($lastLog["settled_time"], 0, 10)), # 待修 13 需轉 10 位
                     "created_at" => new UTCDateTime()
-                ]);
+                ];
+                $this->mongodb->setPool($this->mongoDefaultPool)->insert($this->prcountFixCol, $pfRecord);
+
                 return true;
             }
         }
