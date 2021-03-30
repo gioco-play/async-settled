@@ -324,7 +324,7 @@ class AsyncSettled
         if (!empty($lastLog["settled_time"])) {
             # 與現在時間差距 1 小的忽略
             $now = Carbon::now($this->carbonTimeZone);
-            $lst = Carbon::createFromTimestamp($lastLog["settled_time"], $this->carbonTimeZone);
+            $lst = Carbon::createFromTimestamp(substr($lastLog["settled_time"], 0, 10), $this->carbonTimeZone);
             if ($lst->lt($now->copy()->startOfHour()->subHour(1))) {
                 $pfRecord = [
                     "type" => "settled",
@@ -336,7 +336,6 @@ class AsyncSettled
                     "bet_amount" => $lastLog["bet_amount"],
                     "win_amount" => $lastLog["win_amount"],
                     "game_code" => $lastLog["game_code"],
-//                    "time" => date("Y-m-d H", substr($lastLog["settled_time"], 0, 10)),
                     "time" => $lst->format("Y-m-d H"),
                     "created_at" => new UTCDateTime()
                 ];
