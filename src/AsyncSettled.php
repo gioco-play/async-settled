@@ -15,7 +15,6 @@ use Psr\Container\ContainerInterface;
 class AsyncSettled
 {
     /**
-     * @Inject()
      * @var DbManager
      */
     private $dbManager;
@@ -71,7 +70,6 @@ class AsyncSettled
     private $prcountFixCol;
 
     /**
-     * @Inject()
      * @var MongoDb
      */
     protected $mongodb;
@@ -86,10 +84,10 @@ class AsyncSettled
      */
     protected $carbonTimeZone = "Asia/Taipei";
 
-    public function __construct()
+    public function __construct(ContainerInterface $container)
     {
-//        $this->dbManager = $container->get(DbManager::class);
-//        $this->mongodb = $container->get(MongoDb::class);
+        $this->dbManager = $container->get(DbManager::class);
+        $this->mongodb = $container->get(MongoDb::class);
         $this->asyncSettledCol = "async_settled";
         $this->prcountFixCol = "precount_fix";
     }
