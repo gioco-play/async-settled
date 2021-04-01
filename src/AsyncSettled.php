@@ -9,6 +9,7 @@ use GiocoPlus\Mongodb\MongoDb;
 use GiocoPlus\PrismConst\Constant\TransactionConst;
 use GiocoPlus\PrismPlus\Repository\DbManager;
 use Hyperf\Di\Annotation\Inject;
+use Hyperf\Utils\ApplicationContext;
 use MongoDB\BSON\UTCDateTime;
 use Psr\Container\ContainerInterface;
 
@@ -84,10 +85,15 @@ class AsyncSettled
      */
     protected $carbonTimeZone = "Asia/Taipei";
 
-    public function __construct(ContainerInterface $container)
+//    public function __construct(ContainerInterface $container)
+    public function __construct()
     {
-        $this->dbManager = $container->get(DbManager::class);
-        $this->mongodb = $container->get(MongoDb::class);
+//        $this->dbManager = $container->get(DbManager::class);
+//        $this->mongodb = $container->get(MongoDb::class);
+
+        $this->dbManager = ApplicationContext::getContainer()->get(DbManager::class);
+        $this->mongodb = ApplicationContext::getContainer()->get(MongoDb::class);
+
         $this->asyncSettledCol = "async_settled";
         $this->prcountFixCol = "precount_fix";
     }
