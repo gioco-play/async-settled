@@ -168,12 +168,13 @@ class AsyncSettled
 
     /**
      * 標記為 派彩 (結算)
-     * @param string $opCode
-     * @param string $vendorCode
-     * @param string $gameCode
-     * @param string $parentBetId
-     * @param string $betId
-     * @param array $member
+     * @param string $opCode 營商代碼
+     * @param string $vendorCode 遊戲商代碼
+     * @param string $gameCode 遊戲代碼
+     * @param string $parentBetId 父注編號
+     * @param string $betId 下注編號
+     * @param array $member key 需 player_name & member_code
+     *
      * @param float $stakeAmount
      * @param int $stakeTime
      * @param float $payoffAmount
@@ -223,12 +224,13 @@ class AsyncSettled
 
     /**
      * 標記為 取消下注 (結算)
-     * @param string $opCode
-     * @param string $vendorCode
-     * @param string $gameCode
-     * @param string $parentBetId
-     * @param string $betId
-     * @param array $member
+     * @param string $opCode 營商代碼
+     * @param string $vendorCode 遊戲商代碼
+     * @param string $gameCode 遊戲代碼
+     * @param string $parentBetId 父注編號
+     * @param string $betId 下注編號
+     * @param array $member key 需 player_name & member_code
+     *
      * @param int $stakeTime
      * @param int $payoffTime
      * @return bool
@@ -275,14 +277,15 @@ class AsyncSettled
 
     /**
      * 標記為 取消派彩 (未結算)
-     * @param string $opCode
-     * @param string $vendorCode
-     * @param string $gameCode
-     * @param string $parentBetId
-     * @param string $betId
-     * @param array $member
-     * @param float $stakeAmount
-     * @param int $stakeTime
+     * @param string $opCode 營商代碼
+     * @param string $vendorCode 遊戲商代碼
+     * @param string $gameCode 遊戲代碼
+     * @param string $parentBetId 父注編號
+     * @param string $betId 下注編號
+     * @param array $member key 需 player_name & member_code
+     *
+     * @param float $stakeAmount 下注金額
+     * @param int $stakeTime 下注時間
      * @param int $updateTime
      * @return bool
      * @throws \GiocoPlus\Mongodb\Exception\MongoDBException
@@ -327,6 +330,13 @@ class AsyncSettled
 
     /**
      * 標記為 重新下注 (未結算)
+     * @param string $opCode 營商代碼
+     * @param string $vendorCode 遊戲商代碼
+     * @param string $gameCode 遊戲代碼
+     * @param string $parentBetId 父注編號
+     * @param string $betId 下注編號
+     * @param array $member key 需 player_name & member_code
+     *
      * @param float $stakeAmount
      * @param int $stakeTime
      * @return bool
