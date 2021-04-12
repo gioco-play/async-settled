@@ -8,10 +8,8 @@ use Carbon\Carbon;
 use GiocoPlus\Mongodb\MongoDb;
 use GiocoPlus\PrismConst\Constant\TransactionConst;
 use GiocoPlus\PrismPlus\Repository\DbManager;
-use Hyperf\Di\Annotation\Inject;
 use Hyperf\Utils\ApplicationContext;
 use MongoDB\BSON\UTCDateTime;
-use Psr\Container\ContainerInterface;
 
 class AsyncSettled
 {
@@ -23,42 +21,42 @@ class AsyncSettled
     /**
      * @var string 營商代碼
      */
-    protected $opCode;
+//    protected $opCode;
 
     /**
      * @var string 遊戲商代碼
      */
-    protected $vendorCode;
+//    protected $vendorCode;
 
     /**
      * @var string 遊戲代碼
      */
-    protected $gameCode;
+//    protected $gameCode;
 
     /**
      * @var string 父注編號
      */
-    protected $parentBetId;
+//    protected $parentBetId;
 
     /**
      * @var string 下注編號
      */
-    protected $betId;
+//    protected $betId;
 
     /**
      * @var string 玩家名稱
      */
-    protected $playerName;
+//    protected $playerName;
 
     /**
      * @var string 玩家代碼
      */
-    protected $memberCode;
+//    protected $memberCode;
 
     /**
      * @var array
      */
-    protected $lastLog;
+//    protected $lastLog;
 
     /**
      * @var string
@@ -107,39 +105,48 @@ class AsyncSettled
      * @param string $betId 下注編號
      * @param array $member memberInfo
      */
-    public function setDefault(string $opCode, string $vendorCode, string $gameCode, string $parentBetId, string $betId, array $member)
-    {
-        $this->opCode = $opCode;
-        $this->vendorCode = $vendorCode;
-        $this->gameCode = $gameCode;
-        $this->parentBetId = $parentBetId;
-        $this->betId = $betId;
-
-        $this->playerName = $member["player_name"];
-        $this->memberCode = $member["member_code"];
-
-        return $this;
-    }
+//    public function setDefault(string $opCode, string $vendorCode, string $gameCode, string $parentBetId, string $betId, array $member)
+//    {
+//        $this->opCode = $opCode;
+//        $this->vendorCode = $vendorCode;
+//        $this->gameCode = $gameCode;
+//        $this->parentBetId = $parentBetId;
+//        $this->betId = $betId;
+//
+//        $this->playerName = $member["player_name"];
+//        $this->memberCode = $member["member_code"];
+//
+//        return $this;
+//    }
 
     /**
+     * 標記為 下注 (未結算)
+     * @param string $opCode 營商代碼
+     * @param string $vendorCode 遊戲商代碼
+     * @param string $gameCode 遊戲代碼
+     * @param string $parentBetId 父注編號
+     * @param string $betId 下注編號
+     * @param array $member key 需 player_name & member_code
+     *
      * @param float $stakeAmount 下注金額
      * @param int $stakeTime 下注時間
      * @return bool
      */
-    public function stake(float $stakeAmount, int $stakeTime)
+    public function stake(
+        string $opCode, string $vendorCode, string $gameCode, string $parentBetId, string $betId, array $member,
+        float $stakeAmount, int $stakeTime)
     {
-        $this->lastLog = $this->_lastLog();
+        $playerName = $member["player_name"];
+        $memberCode = $member["member_code"];
 
-        if (empty($this->lastLog)) {
-            $updateTime = micro_timestamp();
-
+        if (empty($this->asyncSettledLog($opCode, $vendorCode, $playerName, $parentBetId, $betId))) {
             $record = [
-                "vendor_code" => $this->vendorCode,
-                "game_code" => $this->gameCode,
-                "parent_bet_id" => $this->parentBetId,
-                "bet_id" => $this->betId,
-                "player_name" =>$this->playerName,
-                "member_code" => $this->memberCode,
+                "vendor_code" => $vendorCode,
+                "game_code" => $gameCode,
+                "parent_bet_id" => $parentBetId,
+                "bet_id" => $betId,
+                "player_name" =>$playerName,
+                "member_code" => $memberCode,
                 "bet_amount" => $stakeAmount,
                 "win_amount" => 0,
                 "bet_time" => $stakeTime,
@@ -147,18 +154,26 @@ class AsyncSettled
                 "status" => TransactionConst::STAKE,
                 "created_at" => new UTCDateTime(),
                 "updated_at" => new UTCDateTime(),
-                "deleted_at" => "", # 刪除用
+                "deleted_at" => "", # ttl 刪除用 (結算時會標記上時間，其餘該欄位值設為 null)
             ];
 
-            $result = $this->dbManager->opMongoDb($this->opCode)->insert($this->asyncSettledCol, $record);
+            $result = $this->dbManager->opMongoDb($opCode)->insert($this->asyncSettledCol, $record);
             if ($result !== false) {
                 return true;
             }
         }
+
         return false;
     }
 
     /**
+     * 標記為 派彩 (結算)
+     * @param string $opCode
+     * @param string $vendorCode
+     * @param string $gameCode
+     * @param string $parentBetId
+     * @param string $betId
+     * @param array $member
      * @param float $stakeAmount
      * @param int $stakeTime
      * @param float $payoffAmount
@@ -166,19 +181,27 @@ class AsyncSettled
      * @return bool
      * @throws \GiocoPlus\Mongodb\Exception\MongoDBException
      */
-    public function payoff(float $stakeAmount, int $stakeTime, float $payoffAmount, int $payoffTime)
+    public function payoff(
+        string $opCode, string $vendorCode, string $gameCode, string $parentBetId, string $betId, array $member,
+        float $stakeAmount, int $stakeTime, float $payoffAmount, int $payoffTime)
     {
-        $hasCreateStake = $this->stake($stakeAmount, $stakeTime);
+        $hasCreateStake = $this->stake(
+            $opCode, $vendorCode, $gameCode, $parentBetId, $betId, $member,
+            $stakeAmount, $stakeTime
+        );
         $updateTime = $payoffTime;
 
-        $lastLog = $this->_lastLog();
-        if (!empty($lastLog)) {
-            if ($hasCreateStake || ($updateTime > $lastLog["settled_time"])) {
-                $result = $this->dbManager->opMongoDb($this->opCode)->updateRow($this->asyncSettledCol, [
-                    "vendor_code" => $this->vendorCode,
-                    "player_name" => $this->playerName,
-                    "parent_bet_id" => $this->parentBetId,
-                    "bet_id" => $this->betId,
+        $playerName = $member["player_name"];
+        $memberCode = $member["member_code"];
+
+        $asyncSettledLog = $this->asyncSettledLog($opCode, $vendorCode, $playerName, $parentBetId, $betId);
+        if (!empty($asyncSettledLog)) {
+            if ($hasCreateStake || ($updateTime > $asyncSettledLog["settled_time"])) {
+                $result = $this->dbManager->opMongoDb($opCode)->updateRow($this->asyncSettledCol, [
+                    "vendor_code" => $vendorCode,
+                    "player_name" => $playerName,
+                    "parent_bet_id" => $parentBetId,
+                    "bet_id" => $betId,
                 ], [
                     "bet_amount" => $stakeAmount,
                     "win_amount" => $payoffAmount,
@@ -187,8 +210,8 @@ class AsyncSettled
                     "status" => TransactionConst::PAYOFF,
                 ]);
                 if ($result !== false) {
-                    if (!empty($lastLog)) {
-                        $this->precountFix($lastLog);
+                    if (!empty($asyncSettledLog)) {
+                        $this->precountFix($opCode, $vendorCode, $parentBetId, $betId, $asyncSettledLog);
                     }
                     return true;
                 }
@@ -199,24 +222,39 @@ class AsyncSettled
     }
 
     /**
+     * 標記為 取消下注 (結算)
+     * @param string $opCode
+     * @param string $vendorCode
+     * @param string $gameCode
+     * @param string $parentBetId
+     * @param string $betId
+     * @param array $member
      * @param int $stakeTime
      * @param int $payoffTime
      * @return bool
      * @throws \GiocoPlus\Mongodb\Exception\MongoDBException
      */
-    public function cancelStake(int $stakeTime, int $payoffTime)
+    public function cancelStake(
+        string $opCode, string $vendorCode, string $gameCode, string $parentBetId, string $betId, array $member,
+        int $stakeTime, int $payoffTime)
     {
-        $hasCreateStake = $this->stake(0, $stakeTime);
+        $hasCreateStake = $this->stake(
+            $opCode, $vendorCode, $gameCode, $parentBetId, $betId, $member,
+            0, $stakeTime
+        );
         $updateTime = $payoffTime;
 
-        $lastLog = $this->_lastLog();
-        if (!empty($lastLog)) {
-            if ($hasCreateStake || ($updateTime > $lastLog["settled_time"])) {
-                $result = $this->dbManager->opMongoDb($this->opCode)->updateRow($this->asyncSettledCol, [
-                    "vendor_code" => $this->vendorCode,
-                    "player_name" => $this->playerName,
-                    "parent_bet_id" => $this->parentBetId,
-                    "bet_id" => $this->betId,
+        $playerName = $member["player_name"];
+        $memberCode = $member["member_code"];
+
+        $asyncSettledLog = $this->asyncSettledLog($opCode, $vendorCode, $playerName, $parentBetId, $betId);
+        if (!empty($asyncSettledLog)) {
+            if ($hasCreateStake || ($updateTime > $asyncSettledLog["settled_time"])) {
+                $result = $this->dbManager->opMongoDb($opCode)->updateRow($this->asyncSettledCol, [
+                    "vendor_code" => $vendorCode,
+                    "player_name" => $playerName,
+                    "parent_bet_id" => $parentBetId,
+                    "bet_id" => $betId,
                 ], [
                     "bet_amount" => 0,
                     "win_amount" => 0,
@@ -225,8 +263,8 @@ class AsyncSettled
                     "status" => TransactionConst::CANCEL_STAKE,
                 ]);
                 if ($result !== false) {
-                    if (!empty($lastLog)) {
-                        $this->precountFix($lastLog);
+                    if (!empty($asyncSettledLog)) {
+                        $this->precountFix($opCode, $vendorCode, $parentBetId, $betId, $asyncSettledLog);
                     }
                     return true;
                 }
@@ -236,24 +274,39 @@ class AsyncSettled
     }
 
     /**
+     * 標記為 取消派彩 (未結算)
+     * @param string $opCode
+     * @param string $vendorCode
+     * @param string $gameCode
+     * @param string $parentBetId
+     * @param string $betId
+     * @param array $member
      * @param float $stakeAmount
      * @param int $stakeTime
      * @param int $updateTime
      * @return bool
      * @throws \GiocoPlus\Mongodb\Exception\MongoDBException
      */
-    public function cancelPayoff(float $stakeAmount, int $stakeTime, int $updateTime)
+    public function cancelPayoff(
+        string $opCode, string $vendorCode, string $gameCode, string $parentBetId, string $betId, array $member,
+        float $stakeAmount, int $stakeTime, int $updateTime)
     {
-        $hasCreateStake = $this->stake($stakeAmount, $stakeTime);
+        $hasCreateStake = $this->stake(
+            $opCode, $vendorCode, $gameCode, $parentBetId, $betId, $member,
+            0, $stakeTime
+        );
 
-        $lastLog = $this->_lastLog();
-        if (!empty($lastLog)) {
-            if ($hasCreateStake || ($updateTime > $lastLog["settled_time"])) {
-                $result = $this->dbManager->opMongoDb($this->opCode)->updateRow($this->asyncSettledCol, [
-                    "vendor_code" => $this->vendorCode,
-                    "player_name" => $this->playerName,
-                    "parent_bet_id" => $this->parentBetId,
-                    "bet_id" => $this->betId,
+        $playerName = $member["player_name"];
+        $memberCode = $member["member_code"];
+
+        $asyncSettledLog = $this->asyncSettledLog($opCode, $vendorCode, $playerName, $parentBetId, $betId);
+        if (!empty($asyncSettledLog)) {
+            if ($hasCreateStake || ($updateTime > $asyncSettledLog["settled_time"])) {
+                $result = $this->dbManager->opMongoDb($opCode)->updateRow($this->asyncSettledCol, [
+                    "vendor_code" => $vendorCode,
+                    "player_name" => $playerName,
+                    "parent_bet_id" => $parentBetId,
+                    "bet_id" => $betId,
                 ], [
                     "settled_time" => $updateTime,
                     "updated_at" => new UTCDateTime(),
@@ -261,8 +314,8 @@ class AsyncSettled
                 ]);
 
                 if ($result !== false) {
-                    if (!empty($lastLog)) {
-                        $this->precountFix($lastLog);
+                    if (!empty($asyncSettledLog)) {
+                        $this->precountFix($opCode, $vendorCode, $parentBetId, $betId, $asyncSettledLog);
                     }
                     return true;
                 }
@@ -273,32 +326,41 @@ class AsyncSettled
     }
 
     /**
+     * 標記為 重新下注 (未結算)
      * @param float $stakeAmount
      * @param int $stakeTime
      * @return bool
      * @throws \GiocoPlus\Mongodb\Exception\MongoDBException
      */
-    public function reStake(float $stakeAmount, int $stakeTime)
+    public function reStake(
+        string $opCode, string $vendorCode, string $gameCode, string $parentBetId, string $betId, array $member,
+        float $stakeAmount, int $stakeTime)
     {
-        $hasCreateStake = $this->stake($stakeAmount, $stakeTime);
+        $hasCreateStake = $this->stake(
+            $opCode, $vendorCode, $gameCode, $parentBetId, $betId, $member,
+            0, $stakeTime
+        );
         $updateTime = micro_timestamp();
 
-        $lastLog = $this->_lastLog();
-        if (!empty($lastLog)) {
-            if ($hasCreateStake || ($updateTime > $lastLog["settled_time"])) {
-                $result = $this->dbManager->opMongoDb($this->opCode)->updateRow($this->asyncSettledCol, [
-                    "vendor_code" => $this->vendorCode,
-                    "player_name" => $this->playerName,
-                    "parent_bet_id" => $this->parentBetId,
-                    "bet_id" => $this->betId,
+        $playerName = $member["player_name"];
+        $memberCode = $member["member_code"];
+
+        $asyncSettledLog = $this->asyncSettledLog($opCode, $vendorCode, $playerName, $parentBetId, $betId);
+        if (!empty($asyncSettledLog)) {
+            if ($hasCreateStake || ($updateTime > $asyncSettledLog["settled_time"])) {
+                $result = $this->dbManager->opMongoDb($opCode)->updateRow($this->asyncSettledCol, [
+                    "vendor_code" => $vendorCode,
+                    "player_name" => $playerName,
+                    "parent_bet_id" => $parentBetId,
+                    "bet_id" => $betId,
                 ], [
                     "bet_amount" => $stakeAmount,
                     "updated_at" => new UTCDateTime(),
                     "status" => 'restake',
                 ]);
                 if ($result !== false) {
-                    if (!empty($lastLog)) {
-                        $this->precountFix($lastLog);
+                    if (!empty($asyncSettledLog)) {
+                        $this->precountFix($opCode, $vendorCode, $parentBetId, $betId, $asyncSettledLog);
                     }
                     return true;
                 }
@@ -308,13 +370,22 @@ class AsyncSettled
     }
 
 
-    private function _lastLog()
+    /**
+     * 查詢注單
+     * @param string $vendorCode
+     * @param string $playerName
+     * @param string $parentBetId
+     * @param string $betId
+     * @return mixed|null
+     * @throws \GiocoPlus\Mongodb\Exception\MongoDBException
+     */
+    private function asyncSettledLog(string $opCode, string $vendorCode, string $playerName, string $parentBetId, string $betId)
     {
-        $log = $this->dbManager->opMongoDb($this->opCode)->fetchAll($this->asyncSettledCol, [
-            "vendor_code" => $this->vendorCode,
-            "player_name" => $this->playerName,
-            "parent_bet_id" => $this->parentBetId,
-            "bet_id" => $this->betId,
+        $log = $this->dbManager->opMongoDb($opCode)->fetchAll($this->asyncSettledCol, [
+            "vendor_code" => $vendorCode,
+            "player_name" => $playerName,
+            "parent_bet_id" => $parentBetId,
+            "bet_id" => $betId,
         ]);
         return (!empty($log[0])) ? $log[0] : null;
     }
@@ -325,7 +396,7 @@ class AsyncSettled
      * @return bool
      * @throws \GiocoPlus\Mongodb\Exception\MongoDBException
      */
-    private function precountFix(array $lastLog)
+    private function precountFix(string $opCode, string $vendorCode, string $parentBetId, string $betId, array $lastLog)
     {
         if (!empty($lastLog["settled_time"])) {
             # 與現在時間差距 1 小的忽略
@@ -334,10 +405,10 @@ class AsyncSettled
             if ($lst->lt($now->copy()->startOfHour()->subHour(1))) {
                 $pfRecord = [
                     "type" => "settled",
-                    "op_code" => $this->opCode,
-                    "vendor_code" => $this->vendorCode,
-                    "parent_bet_id" => $this->parentBetId,
-                    "bet_id" => $this->betId,
+                    "op_code" => $opCode,
+                    "vendor_code" => $vendorCode,
+                    "parent_bet_id" => $parentBetId,
+                    "bet_id" => $betId,
                     "player_name" => $lastLog["player_name"],
                     "bet_amount" => $lastLog["bet_amount"],
                     "win_amount" => $lastLog["win_amount"],
