@@ -423,9 +423,10 @@ class AsyncSettled
                     "bet_amount" => $asyncSettledLog["bet_amount"],
                     "win_amount" => $asyncSettledLog["win_amount"],
                     "game_code" => $asyncSettledLog["game_code"],
-                    "time" => $lst->copy()->subHour(8)->format("Y-m-d H"),
+                    "time" => $lst->copy()->timezone("Europe/London")->format("Y-m-d H"),
                     "created_at" => new UTCDateTime()
                 ];
+
                 $this->mongodb->setPool($this->mongoDefaultPool)->insert($this->prcountFixCol, $pfRecord);
 
                 return true;
