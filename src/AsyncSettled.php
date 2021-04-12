@@ -392,16 +392,16 @@ class AsyncSettled
 
     /**
      * 觸發修正 precount
-     * @param array $lastLog
+     * @param array $asyncSettledLog
      * @return bool
      * @throws \GiocoPlus\Mongodb\Exception\MongoDBException
      */
-    private function precountFix(string $opCode, string $vendorCode, string $parentBetId, string $betId, array $lastLog)
+    private function precountFix(string $opCode, string $vendorCode, string $parentBetId, string $betId, array $asyncSettledLog)
     {
-        if (!empty($lastLog["settled_time"])) {
+        if (!empty($asyncSettledLog["settled_time"])) {
             # 與現在時間差距 1 小的忽略
             $now = Carbon::now($this->carbonTimeZone);
-            $lst = Carbon::createFromTimestamp(substr($lastLog["settled_time"], 0, 10), $this->carbonTimeZone);
+            $lst = Carbon::createFromTimestamp(substr($asyncSettledLog["settled_time"], 0, 10), $this->carbonTimeZone);
             if ($lst->lt($now->copy()->startOfHour()->subHour(1))) {
                 $pfRecord = [
                     "type" => "settled",
@@ -409,10 +409,10 @@ class AsyncSettled
                     "vendor_code" => $vendorCode,
                     "parent_bet_id" => $parentBetId,
                     "bet_id" => $betId,
-                    "player_name" => $lastLog["player_name"],
-                    "bet_amount" => $lastLog["bet_amount"],
-                    "win_amount" => $lastLog["win_amount"],
-                    "game_code" => $lastLog["game_code"],
+                    "player_name" => $asyncSettledLog["player_name"],
+                    "bet_amount" => $asyncSettledLog["bet_amount"],
+                    "win_amount" => $asyncSettledLog["win_amount"],
+                    "game_code" => $asyncSettledLog["game_code"],
                     "time" => $lst->format("Y-m-d H"),
                     "created_at" => new UTCDateTime()
                 ];
