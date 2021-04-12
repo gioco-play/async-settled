@@ -19,46 +19,6 @@ class AsyncSettled
     private $dbManager;
 
     /**
-     * @var string 營商代碼
-     */
-//    protected $opCode;
-
-    /**
-     * @var string 遊戲商代碼
-     */
-//    protected $vendorCode;
-
-    /**
-     * @var string 遊戲代碼
-     */
-//    protected $gameCode;
-
-    /**
-     * @var string 父注編號
-     */
-//    protected $parentBetId;
-
-    /**
-     * @var string 下注編號
-     */
-//    protected $betId;
-
-    /**
-     * @var string 玩家名稱
-     */
-//    protected $playerName;
-
-    /**
-     * @var string 玩家代碼
-     */
-//    protected $memberCode;
-
-    /**
-     * @var array
-     */
-//    protected $lastLog;
-
-    /**
      * @var string
      */
     private $asyncSettledCol;
@@ -83,12 +43,8 @@ class AsyncSettled
      */
     protected $carbonTimeZone = "Asia/Taipei";
 
-//    public function __construct(ContainerInterface $container)
     public function __construct()
     {
-//        $this->dbManager = $container->get(DbManager::class);
-//        $this->mongodb = $container->get(MongoDb::class);
-
         $this->dbManager = ApplicationContext::getContainer()->get(DbManager::class);
         $this->mongodb = ApplicationContext::getContainer()->get(MongoDb::class);
 
@@ -96,28 +52,6 @@ class AsyncSettled
         $this->prcountFixCol = "precount_fix";
     }
 
-    /**
-     *
-     * @param string $opCode 營商代碼
-     * @param string $vendorCode 遊戲商代碼
-     * @param string $gameCode 遊戲代碼
-     * @param string $parentBetId 父注編號
-     * @param string $betId 下注編號
-     * @param array $member memberInfo
-     */
-//    public function setDefault(string $opCode, string $vendorCode, string $gameCode, string $parentBetId, string $betId, array $member)
-//    {
-//        $this->opCode = $opCode;
-//        $this->vendorCode = $vendorCode;
-//        $this->gameCode = $gameCode;
-//        $this->parentBetId = $parentBetId;
-//        $this->betId = $betId;
-//
-//        $this->playerName = $member["player_name"];
-//        $this->memberCode = $member["member_code"];
-//
-//        return $this;
-//    }
 
     /**
      * 標記為 下注 (未結算)
@@ -208,6 +142,7 @@ class AsyncSettled
                     "win_amount" => $payoffAmount,
                     "settled_time" => $payoffTime,
                     "updated_at" => new UTCDateTime(),
+                    "deleted_at" => new UTCDateTime(),
                     "status" => TransactionConst::PAYOFF,
                 ]);
                 if ($result !== false) {
@@ -262,6 +197,7 @@ class AsyncSettled
                     "win_amount" => 0,
                     "settled_time" => $updateTime,
                     "updated_at" => new UTCDateTime(),
+                    "deleted_at" => new UTCDateTime(),
                     "status" => TransactionConst::CANCEL_STAKE,
                 ]);
                 if ($result !== false) {
@@ -313,6 +249,7 @@ class AsyncSettled
                 ], [
                     "settled_time" => $updateTime,
                     "updated_at" => new UTCDateTime(),
+                    "deleted_at" => "",
                     "status" => TransactionConst::CANCEL_PAYOFF,
                 ]);
 
@@ -366,6 +303,7 @@ class AsyncSettled
                 ], [
                     "bet_amount" => $stakeAmount,
                     "updated_at" => new UTCDateTime(),
+                    "deleted_at" => "",
                     "status" => 'restake',
                 ]);
                 if ($result !== false) {
