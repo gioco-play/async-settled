@@ -351,7 +351,7 @@ class AsyncSettled
             $now = Carbon::now($this->carbonTimeZone);
             $lst = Carbon::createFromTimestamp(substr($asyncSettledLog["settled_time"], 0, 10), $this->carbonTimeZone);
 
-            if ($lst->lt($now->copy()->startOfHour()->subHour(1))) {
+            if ($lst->lt($now->copy()->startOfHour())) {
                 $pfRecord = [
                     "type" => "settled",
                     "op_code" => $opCode,
