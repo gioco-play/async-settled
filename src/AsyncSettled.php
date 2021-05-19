@@ -86,6 +86,7 @@ class AsyncSettled
                 "bet_time" => $stakeTime,
                 "settled_time" => 0,
                 "status" => TransactionConst::STAKE,
+                "total" => 1,
                 "created_at" => new UTCDateTime(),
                 "updated_at" => new UTCDateTime(),
                 "deleted_at" => "", # ttl 刪除用 (結算時會標記上時間，其餘該欄位值設為 null)
@@ -109,16 +110,18 @@ class AsyncSettled
      * @param string $betId 下注編號
      * @param array $member key 需 player_name & member_code
      *
-     * @param float $stakeAmount
-     * @param int $stakeTime
-     * @param float $payoffAmount
-     * @param int $payoffTime
+     * @param float $stakeAmount 下注金額
+     * @param int $stakeTime 下注時間
+     * @param float $payoffAmount 結算金額
+     * @param int $payoffTime 結算時間
+     * @param int $total 注單數量
+     *
      * @return bool
      * @throws \GiocoPlus\Mongodb\Exception\MongoDBException
      */
     public function payoff(
         string $opCode, string $vendorCode, string $gameCode, string $parentBetId, string $betId, array $member,
-        float $stakeAmount, int $stakeTime, float $payoffAmount, int $payoffTime)
+        float $stakeAmount, int $stakeTime, float $payoffAmount, int $payoffTime, int $total)
     {
         $hasCreateStake = $this->stake(
             $opCode, $vendorCode, $gameCode, $parentBetId, $betId, $member,
@@ -141,6 +144,7 @@ class AsyncSettled
                     "bet_amount" => $stakeAmount,
                     "win_amount" => $payoffAmount,
                     "settled_time" => $payoffTime,
+                    "total" => $total,
                     "updated_at" => new UTCDateTime(),
                     "deleted_at" => new UTCDateTime(),
                     "status" => TransactionConst::PAYOFF,
@@ -166,14 +170,16 @@ class AsyncSettled
      * @param string $betId 下注編號
      * @param array $member key 需 player_name & member_code
      *
-     * @param int $stakeTime
-     * @param int $payoffTime
+     * @param int $stakeTime 下注時間
+     * @param int $payoffTime 結算時間
+     * @param int $total 注單數量
+     *
      * @return bool
      * @throws \GiocoPlus\Mongodb\Exception\MongoDBException
      */
     public function cancelStake(
         string $opCode, string $vendorCode, string $gameCode, string $parentBetId, string $betId, array $member,
-        int $stakeTime, int $payoffTime)
+        int $stakeTime, int $payoffTime, int $total)
     {
         $hasCreateStake = $this->stake(
             $opCode, $vendorCode, $gameCode, $parentBetId, $betId, $member,
@@ -196,6 +202,7 @@ class AsyncSettled
                     "bet_amount" => 0,
                     "win_amount" => 0,
                     "settled_time" => $updateTime,
+                    "total" => $total,
                     "updated_at" => new UTCDateTime(),
                     "deleted_at" => new UTCDateTime(),
                     "status" => TransactionConst::CANCEL_STAKE,
@@ -222,13 +229,15 @@ class AsyncSettled
      *
      * @param float $stakeAmount 下注金額
      * @param int $stakeTime 下注時間
-     * @param int $updateTime
+     * @param int $updateTime 更新時間
+     * @param int $total 注單數量
+     *
      * @return bool
      * @throws \GiocoPlus\Mongodb\Exception\MongoDBException
      */
     public function cancelPayoff(
         string $opCode, string $vendorCode, string $gameCode, string $parentBetId, string $betId, array $member,
-        float $stakeAmount, int $stakeTime, int $updateTime)
+        float $stakeAmount, int $stakeTime, int $updateTime, int $total)
     {
         $hasCreateStake = $this->stake(
             $opCode, $vendorCode, $gameCode, $parentBetId, $betId, $member,
@@ -247,6 +256,7 @@ class AsyncSettled
                     "parent_bet_id" => $parentBetId,
                     "bet_id" => $betId,
                 ], [
+                    "total" => $total,
                     "settled_time" => $updateTime,
                     "updated_at" => new UTCDateTime(),
                     "deleted_at" => "",
@@ -274,14 +284,16 @@ class AsyncSettled
      * @param string $betId 下注編號
      * @param array $member key 需 player_name & member_code
      *
-     * @param float $stakeAmount
-     * @param int $stakeTime
+     * @param float $stakeAmount 下注金額
+     * @param int $stakeTime 下注時間
+     * @param int $total 注單數量
+     *
      * @return bool
      * @throws \GiocoPlus\Mongodb\Exception\MongoDBException
      */
     public function reStake(
         string $opCode, string $vendorCode, string $gameCode, string $parentBetId, string $betId, array $member,
-        float $stakeAmount, int $stakeTime)
+        float $stakeAmount, int $stakeTime, int $total)
     {
         $hasCreateStake = $this->stake(
             $opCode, $vendorCode, $gameCode, $parentBetId, $betId, $member,
@@ -302,6 +314,7 @@ class AsyncSettled
                     "bet_id" => $betId,
                 ], [
                     "bet_amount" => $stakeAmount,
+                    "total" => $total,
                     "updated_at" => new UTCDateTime(),
                     "deleted_at" => "",
                     "status" => 'restake',
