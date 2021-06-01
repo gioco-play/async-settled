@@ -150,9 +150,7 @@ class AsyncSettled
                     "status" => TransactionConst::PAYOFF,
                 ]);
                 if ($result !== false) {
-                    if (!empty($asyncSettledLog)) {
-                        $this->precountFix($opCode, $vendorCode, $parentBetId, $betId, $asyncSettledLog);
-                    }
+                    $this->precountFix($opCode, $vendorCode, $parentBetId, $betId, $asyncSettledLog);
                     return true;
                 }
             }
@@ -208,9 +206,7 @@ class AsyncSettled
                     "status" => TransactionConst::CANCEL_STAKE,
                 ]);
                 if ($result !== false) {
-                    if (!empty($asyncSettledLog)) {
-                        $this->precountFix($opCode, $vendorCode, $parentBetId, $betId, $asyncSettledLog);
-                    }
+                    $this->precountFix($opCode, $vendorCode, $parentBetId, $betId, $asyncSettledLog);
                     return true;
                 }
             }
@@ -264,9 +260,7 @@ class AsyncSettled
                 ]);
 
                 if ($result !== false) {
-                    if (!empty($asyncSettledLog)) {
-                        $this->precountFix($opCode, $vendorCode, $parentBetId, $betId, $asyncSettledLog);
-                    }
+                    $this->precountFix($opCode, $vendorCode, $parentBetId, $betId, $asyncSettledLog);
                     return true;
                 }
             }
@@ -320,9 +314,7 @@ class AsyncSettled
                     "status" => 'restake',
                 ]);
                 if ($result !== false) {
-                    if (!empty($asyncSettledLog)) {
-                        $this->precountFix($opCode, $vendorCode, $parentBetId, $betId, $asyncSettledLog);
-                    }
+                    $this->precountFix($opCode, $vendorCode, $parentBetId, $betId, $asyncSettledLog);
                     return true;
                 }
             }
