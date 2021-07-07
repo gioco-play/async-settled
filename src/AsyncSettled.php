@@ -83,7 +83,7 @@ class AsyncSettled
      * @param string $betId 下注編號
      * @param array $member 會員資料 (key 需 player_name & member_code)
      */
-    public function __construct(string $opCode, string $vendorCode, string $gameCode, string $parentBetId, string $betId, array $member)
+    public function __construct(string $opCode = '', string $vendorCode = '', string $gameCode = '', string $parentBetId = '', string $betId = '', array $member = [])
     {
         $this->dbManager = ApplicationContext::getContainer()->get(DbManager::class);
         $this->mongodb = ApplicationContext::getContainer()->get(MongoDb::class);
