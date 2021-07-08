@@ -3,8 +3,8 @@
 ## 使用方法
 
 
-### 初始化 (兩種方法選一種)
-1. 實體化物件
+### 初始化
+#### 實體化物件
 ```php
 use GiocoPlus\AsyncSettled\AsyncSettled;
 ```
@@ -23,20 +23,6 @@ use GiocoPlus\AsyncSettled\AsyncSettled;
 $asyncSettled = new AsyncSettled($opCode, $vendorCode, $gameCode, $parentBetId, $betId, $member);
 ```
 
-2. 注入懶載入代理
-```php
-use GiocoPlus\AsyncSettled\AsyncSettled;
-```
-```php
-/**
- * @Inject(lazy=true)
- * @var AsyncSettled
- */
-private $asyncSettled;
-```
-```php
-$this->asyncSettled->setDefault($opCode, $vendorCode, $gameCode, $parentBetId, $betId, $member);
-```
 
 ### 使用方法
 待寫
