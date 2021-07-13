@@ -5,7 +5,6 @@ namespace GiocoPlus\AsyncSettled;
 
 use Carbon\Carbon;
 use Exception;
-use GiocoPlus\Mongodb\Exception\MongoDBException;
 use GiocoPlus\Mongodb\MongoDb;
 use GiocoPlus\PrismConst\Constant\TransactionConst;
 use GiocoPlus\PrismPlus\Repository\DbManager;
@@ -179,13 +178,13 @@ class AsyncSettled
     {
         try {
             $hasCreateStake = $this->stake($stakeAmount, $stakeTime);
+
+            // $stakeTime = $this->toTime13($stakeTime);
+            $payoffTime = $this->toTime13($payoffTime);
             $updateTime = $payoffTime;
 
             $playerName = $this->member["player_name"];
-            $memberCode = $this->member["member_code"];
-
-            $stakeTime = $this->toTime13($stakeTime);
-            $payoffTime = $this->toTime13($payoffTime);
+            // $memberCode = $this->member["member_code"];
 
             $asyncSettledLog = $this->asyncSettledLog($this->opCode, $this->vendorCode, $playerName, $this->parentBetId, $this->betId);
             if (!empty($asyncSettledLog)) {
@@ -233,9 +232,9 @@ class AsyncSettled
             $updateTime = $payoffTime;
 
             $playerName = $this->member["player_name"];
-            $memberCode = $this->member["member_code"];
+            // $memberCode = $this->member["member_code"];
 
-            $stakeTime = $this->toTime13($stakeTime);
+            // $stakeTime = $this->toTime13($stakeTime);
             $updateTime = $this->toTime13($updateTime);
 
             $asyncSettledLog = $this->asyncSettledLog($this->opCode, $this->vendorCode, $playerName, $this->parentBetId, $this->betId);
