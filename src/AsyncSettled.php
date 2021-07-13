@@ -394,10 +394,10 @@ class AsyncSettled
      */
     private function precountFix(string $opCode, string $vendorCode, string $parentBetId, string $betId, array $asyncSettledLog)
     {
-        if (!empty($asyncSettledLog["settled_time"])) {
+        if (!empty($asyncSettledLog["settled_time"]) && $asyncSettledLog["settled_time"] != 0) {
             # 與現在時間差距 1 小的忽略
             $now = Carbon::now($this->carbonTimeZone);
-            $lst = Carbon::createFromTimestamp(substr($asyncSettledLog["settled_time"], 0, 10), $this->carbonTimeZone);
+            $lst = Carbon::createFromTimestamp(substr(strval($asyncSettledLog["settled_time"]), 0, 10), $this->carbonTimeZone);
 
             if ($lst->lt($now->copy()->startOfHour())) {
                 $pfRecord = [
