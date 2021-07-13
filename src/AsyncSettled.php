@@ -4,13 +4,13 @@ declare(strict_types=1);
 namespace GiocoPlus\AsyncSettled;
 
 use Carbon\Carbon;
+use Exception;
 use GiocoPlus\Mongodb\Exception\MongoDBException;
 use GiocoPlus\Mongodb\MongoDb;
 use GiocoPlus\PrismConst\Constant\TransactionConst;
 use GiocoPlus\PrismPlus\Repository\DbManager;
 use Hyperf\Utils\ApplicationContext;
 use MongoDB\BSON\UTCDateTime;
-use mysql_xdevapi\Exception;
 
 class AsyncSettled
 {
@@ -123,6 +123,7 @@ class AsyncSettled
      * @param float $stakeAmount 下注金額
      * @param int $stakeTime 下注時間
      * @return bool
+     * @throws Exception
      */
     public function stake(float $stakeAmount, int $stakeTime)
     {
@@ -172,6 +173,7 @@ class AsyncSettled
      * @param int $total 注單數量
      *
      * @return bool
+     * @throws Exception
      */
     public function payoff(float $stakeAmount, int $stakeTime, float $payoffAmount, int $payoffTime, int $total)
     {
@@ -222,6 +224,7 @@ class AsyncSettled
      * @param int $total 注單數量
      *
      * @return bool
+     * @throws Exception
      */
     public function cancelStake(int $stakeTime, int $payoffTime, int $total)
     {
@@ -273,6 +276,7 @@ class AsyncSettled
      * @param int $total 注單數量
      *
      * @return bool
+     * @throws Exception
      */
     public function cancelPayoff(float $stakeAmount, int $stakeTime, int $updateTime, int $total)
     {
@@ -321,8 +325,7 @@ class AsyncSettled
      * @param int $total 注單數量
      *
      * @return bool
-     * @throws \GiocoPlus\Mongodb\Exception\MongoDBException
-     * @throws \Exception
+     * @throws Exception
      */
     public function reStake(float $stakeAmount, int $stakeTime, int $total)
     {
@@ -369,7 +372,6 @@ class AsyncSettled
      * @param string $parentBetId
      * @param string $betId
      * @return mixed|null
-     * @throws \GiocoPlus\Mongodb\Exception\MongoDBException
      */
     private function asyncSettledLog(string $opCode, string $vendorCode, string $playerName, string $parentBetId, string $betId)
     {
@@ -390,7 +392,6 @@ class AsyncSettled
      * @param string $betId
      * @param array $asyncSettledLog
      * @return bool
-     * @throws MongoDBException
      */
     private function precountFix(string $opCode, string $vendorCode, string $parentBetId, string $betId, array $asyncSettledLog)
     {
