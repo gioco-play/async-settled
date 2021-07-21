@@ -394,24 +394,24 @@ class AsyncSettled
      */
     private function precountFix(string $opCode, string $vendorCode, string $parentBetId, string $betId, array $asyncSettledLog)
     {
-        if (!empty($asyncSettledLog["settled_time"]) && $asyncSettledLog["settled_time"] != 0) {
+        if (!empty($asyncSettledLog['settled_time']) && $asyncSettledLog['settled_time'] != 0) {
             # 與現在時間差距 1 小的忽略
             $now = Carbon::now($this->carbonTimeZone);
-            $lst = Carbon::createFromTimestamp(substr(strval($asyncSettledLog["settled_time"]), 0, 10), $this->carbonTimeZone);
 
+            $lst = Carbon::createFromTimestamp(substr(strval($asyncSettledLog['settled_time']), 0, 10), $this->carbonTimeZone);
             if ($lst->lt($now->copy()->startOfHour())) {
                 $pfRecord = [
-                    "type" => "settled",
-                    "op_code" => $opCode,
-                    "vendor_code" => $vendorCode,
-                    "parent_bet_id" => $parentBetId,
-                    "bet_id" => $betId,
-                    "player_name" => $asyncSettledLog["player_name"],
-                    "bet_amount" => $asyncSettledLog["bet_amount"],
-                    "win_amount" => $asyncSettledLog["win_amount"],
-                    "game_code" => $asyncSettledLog["game_code"],
-                    "time" => $lst->copy()->timezone("UTC")->format("Y-m-d H"),
-                    "created_at" => new UTCDateTime()
+                    'type' => 'settled',
+                    'op_code' => $opCode,
+                    'vendor_code' => $vendorCode,
+                    'parent_bet_id' => $parentBetId,
+                    'bet_id' => $betId,
+                    'player_name' => $asyncSettledLog['player_name'],
+                    'bet_amount' => $asyncSettledLog['bet_amount'],
+                    'win_amount' => $asyncSettledLog['win_amount'],
+                    'game_code' => $asyncSettledLog['game_code'],
+                    'time' => $lst->copy()->timezone('UTC')->format('Y-m-d H'),
+                    'created_at' => new UTCDateTime()
                 ];
 
                 $this->mongodb->setPool($this->mongoDefaultPool)->insert($this->prcountFixCol, $pfRecord);
