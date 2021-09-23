@@ -183,12 +183,12 @@ class AsyncSettled
             $payoffTime = $this->toTime13($payoffTime);
             $updateTime = $payoffTime;
 
-            $playerName = $this->member["player_name"];
+            $playerName = $this->member['player_name'];
             // $memberCode = $this->member["member_code"];
 
             $asyncSettledLog = $this->asyncSettledLog($this->opCode, $this->vendorCode, $playerName, $this->parentBetId, $this->betId);
             if (!empty($asyncSettledLog)) {
-                if ($hasCreateStake || ($updateTime > $asyncSettledLog["settled_time"])) {
+                if ($hasCreateStake || ($updateTime > $asyncSettledLog['settled_time'])) {
                     $result = $this->dbManager->opMongoDb($this->opCode)->updateRow($this->asyncSettledCol, [
                         "vendor_code" => $this->vendorCode,
                         "player_name" => $playerName,
@@ -210,6 +210,56 @@ class AsyncSettled
                 }
             }
         } catch(\Throwable $th) {
+            throw new Exception($th->getMessage());
+        }
+
+        return false;
+    }
+
+    /**
+     * 標記為 派彩 (結算) 略過檢查下注
+     * @param float $payoffAmount 結算金額
+     * @param int $payoffTime 結算時間
+     * @param int $total 注單數量
+     *
+     * @return bool
+     * @throws Exception
+     */
+    public function payoffSkipCheck(float $payoffAmount, int $payoffTime, int $total) {
+        try {
+            $payoffTime = $this->toTime13($payoffTime);
+            $updateTime = $payoffTime;
+
+            $playerName = $this->member['player_name'];
+            $asyncSettledLog = $this->asyncSettledLog($this->opCode, $this->vendorCode, $playerName, $this->parentBetId, $this->betId);
+            if (!empty($asyncSettledLog)) {
+                if ($updateTime > $asyncSettledLog['settled_time']) {
+                    $result = $this->dbManager->opMongoDb($this->opCode)->updateRow(
+                        $this->asyncSettledCol,
+                        [
+                            'vendor_code' => $this->vendorCode,
+                            'player_name' => $playerName,
+                            'parent_bet_id' => $this->parentBetId,
+                            'bet_id' => $this->betId,
+                        ],
+                        [
+                            "win_amount" => $payoffAmount,
+                            "settled_time" => $payoffTime,
+                            "total" => $total,
+                            "updated_at" => new UTCDateTime(),
+                            "deleted_at" => new UTCDateTime(),
+                            "status" => TransactionConst::PAYOFF,
+                        ]
+                    );
+                    if ($result !== false) {
+                        $this->precountFix($this->opCode, $this->vendorCode, $this->parentBetId, $this->betId, $asyncSettledLog);
+                        return true;
+                    }
+                }
+            } else {
+                throw new Exception("opCode:{$this->opCode} pBetId:{$this->parentBetId} betId:{$this->betId} asyncSettledLog not exists");
+            }
+        } catch (\Throwable $th) {
             throw new Exception($th->getMessage());
         }
 
@@ -268,6 +318,52 @@ class AsyncSettled
     }
 
     /**
+     * 標記為 取消下注 (結算) 略過檢查下注
+     * @param int $payoffTime 結算時間
+     * @param int $total 注單數量
+     *
+     * @return bool
+     * @throws Exception
+     */
+    public function cancelStakeSkipCheck(int $payoffTime, int $total) {
+        try {
+            $updateTime = $payoffTime;
+            $playerName = $this->member['player_name'];
+            $updateTime = $this->toTime13($updateTime);
+
+            $asyncSettledLog = $this->asyncSettledLog($this->opCode, $this->vendorCode, $playerName, $this->parentBetId, $this->betId);
+            if (!empty($asyncSettledLog)) {
+                if ($updateTime > $asyncSettledLog['settled_time']) {
+                    $result = $this->dbManager->opMongoDb($this->opCode)->updateRow($this->asyncSettledCol, [
+                        "vendor_code" => $this->vendorCode,
+                        "player_name" => $playerName,
+                        "parent_bet_id" => $this->parentBetId,
+                        "bet_id" => $this->betId,
+                    ], [
+                        "bet_amount" => 0,
+                        "win_amount" => 0,
+                        "settled_time" => $updateTime,
+                        "total" => $total,
+                        "updated_at" => new UTCDateTime(),
+                        "deleted_at" => new UTCDateTime(),
+                        "status" => TransactionConst::CANCEL_STAKE,
+                    ]);
+                    if ($result !== false) {
+                        $this->precountFix($this->opCode, $this->vendorCode, $this->parentBetId, $this->betId, $asyncSettledLog);
+                        return true;
+                    }
+                }
+            } else {
+                throw new Exception("opCode:{$this->opCode} pBetId:{$this->parentBetId} betId:{$this->betId} asyncSettledLog not exists");
+            }
+
+        } catch (\Throwable $th) {
+            throw new Exception($th->getMessage());
+        }
+        return false;
+    }
+
+    /**
      * 標記為 取消派彩 (未結算)
      * @param float $stakeAmount 下注金額
      * @param int $stakeTime 下注時間
@@ -314,6 +410,51 @@ class AsyncSettled
             throw new Exception($th->getMessage());
         }
 
+        return false;
+    }
+
+    /**
+     * 標記為 取消派彩 (未結算) 略過檢查下注
+     * @param int $updateTime 更新時間
+     * @param int $total 注單數量
+     *
+     * @return bool
+     * @throws Exception
+     */
+    public function cancelPayoffSkipCheck(int $updateTime, int $total)
+    {
+        try {
+            $playerName = $this->member['player_name'];
+            $memberCode = $this->member['member_code'];
+            $updateTime = $this->toTime13($updateTime);
+            $asyncSettledLog = $this->asyncSettledLog($this->opCode, $this->vendorCode, $playerName, $this->parentBetId, $this->betId);
+            if (!empty($asyncSettledLog)) {
+                if ($updateTime > $asyncSettledLog['settled_time']) {
+                    $result = $this->dbManager->opMongoDb($this->opCode)->updateRow($this->asyncSettledCol, [
+                        'vendor_code' => $this->vendorCode,
+                        'player_name' => $playerName,
+                        'parent_bet_id' => $this->parentBetId,
+                        'bet_id' => $this->betId,
+                    ], [
+                        'total' => $total,
+                        'settled_time' => $updateTime,
+                        'updated_at' => new UTCDateTime(),
+                        'deleted_at' => '',
+                        'status' => TransactionConst::CANCEL_PAYOFF,
+                    ]);
+
+                    if ($result !== false) {
+                        $this->precountFix($this->opCode, $this->vendorCode, $this->parentBetId, $this->betId, $asyncSettledLog);
+                        return true;
+                    }
+                }
+            } else {
+                throw new Exception("opCode:{$this->opCode} pBetId:{$this->parentBetId} betId:{$this->betId} asyncSettledLog not exists");
+            }
+
+        } catch (\Throwable $th) {
+            throw new Exception($th->getMessage());
+        }
         return false;
     }
 
