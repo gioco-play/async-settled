@@ -3,7 +3,7 @@
     "minimum-stability": "dev",
     "require": {
         "php": ">=7.2",
-        "gioco-plus/prism-plus": "dev-master"
+        "gioco-plus/prism-plus": "dev-master || >=1"
     },
     "description": "",
     "autoload": {
