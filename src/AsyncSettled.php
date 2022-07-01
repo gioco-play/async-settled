@@ -7,7 +7,11 @@ use Carbon\Carbon;
 use Exception;
 use GiocoPlus\Mongodb\MongoDb;
 use GiocoPlus\PrismConst\Constant\TransactionConst;
+use GiocoPlus\PrismConst\State\TransactionState;
+use GiocoPlus\PrismConst\Tool\ApiResponse;
 use GiocoPlus\PrismPlus\Repository\DbManager;
+use GiocoPlus\PrismPlus\Service\OperatorCacheService;
+use Hyperf\Di\Annotation\Inject;
 use Hyperf\Utils\ApplicationContext;
 use MongoDB\BSON\UTCDateTime;
 
@@ -17,6 +21,12 @@ class AsyncSettled
      * @var DbManager
      */
     private $dbManager;
+
+    /**
+     * @Inject()
+     * @var OperatorCacheService
+     */
+    private $opCache;
 
     /**
      * @var string
@@ -74,6 +84,18 @@ class AsyncSettled
     protected $member;
 
     /**
+     * 幣值轉換值
+     * @var float
+     */
+    protected $currencyRate;
+
+    /**
+     * 錢包精度
+     * @var int
+     */
+    protected $currencyScale = 4;
+
+    /**
      * AsyncSettled constructor.
      * @param string $opCode 營商代碼
      * @param string $vendorCode 遊戲商代碼
@@ -96,6 +118,13 @@ class AsyncSettled
         $this->parentBetId = $parentBetId;
         $this->betId = $betId;
         $this->member = $member;
+
+        // 幣別換算配置
+        $currencyRates = $this->opCache->currencyRate($opCode);
+        if (isset($currencyRates[$vendorCode]) === false) {
+            return ApiResponse::result([], TransactionState::TRANS_CURRENCY_RATE_EMPTY);
+        }
+        $this->currencyRate = $currencyRates[$vendorCode];
     }
 
     /**
@@ -105,6 +134,7 @@ class AsyncSettled
      * @param string $parentBetId 父注編號
      * @param string $betId 下注編號
      * @param array $member 會員資料 (key 需 player_name & member_code)
+     * @throws Exception
      */
     public function setDefault(string $opCode, string $vendorCode, string $gameCode, string $parentBetId, string $betId, array $member): AsyncSettled
     {
@@ -114,6 +144,13 @@ class AsyncSettled
         $this->parentBetId = $parentBetId;
         $this->betId = $betId;
         $this->member = $member;
+
+        // 幣別換算配置
+        $currencyRates = $this->opCache->currencyRate($opCode);
+        if (isset($currencyRates[$vendorCode]) === false) {
+            throw new \Exception(TransactionState::TRANS_CURRENCY_RATE_EMPTY['msg']);
+        }
+        $this->currencyRate = $currencyRates[$vendorCode];
         return $this;
     }
 
@@ -140,8 +177,10 @@ class AsyncSettled
                     "bet_id" => $this->betId,
                     "player_name" => $playerName,
                     "member_code" => $memberCode,
-                    "bet_amount" => $stakeAmount,
+                    "bet_amount" => $this->exchangeRate($stakeAmount, '/'),
                     "win_amount" => 0,
+                    "vendor_bet_amount" => $stakeAmount,
+                    "vendor_win_amount" => 0,
                     "bet_time" => $stakeTime,
                     "settled_time" => 0,
                     "status" => TransactionConst::STAKE,
@@ -159,7 +198,6 @@ class AsyncSettled
         } catch (\Throwable $th) {
             throw new Exception($th->getMessage());
         }
-
         return false;
     }
 
@@ -575,4 +613,22 @@ class AsyncSettled
         return intval(str_pad(strval($ts), 13, '0'));
     }
 
+    /**
+     * 幣值轉換
+     * @param float $amount
+     * @param string $operator
+     * @return false|float
+     */
+    protected function exchangeRate(float $amount, string $operator) {
+        $amount = strval($amount);
+        $rate = strval($this->currencyRate);
+        switch ($operator) {
+            case '*':
+                return floatval(bcmul($amount, $rate, $this->currencyScale));
+            case '/':
+                return floatval(bcdiv($amount, $rate, $this->currencyScale));
+            default :
+                return  false;
+        }
+    }
 }
