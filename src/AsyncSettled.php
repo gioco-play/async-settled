@@ -11,7 +11,6 @@ use GiocoPlus\PrismConst\State\TransactionState;
 use GiocoPlus\PrismConst\Tool\ApiResponse;
 use GiocoPlus\PrismPlus\Repository\DbManager;
 use GiocoPlus\PrismPlus\Service\OperatorCacheService;
-use Hyperf\Di\Annotation\Inject;
 use Hyperf\Utils\ApplicationContext;
 use MongoDB\BSON\UTCDateTime;
 
@@ -23,7 +22,6 @@ class AsyncSettled
     private $dbManager;
 
     /**
-     * @Inject()
      * @var OperatorCacheService
      */
     private $opCache;
@@ -36,7 +34,7 @@ class AsyncSettled
     /**
      * @var string
      */
-    private $prcountFixCol;
+    private $precountFixCol;
 
     /**
      * @var MongoDb
@@ -108,9 +106,10 @@ class AsyncSettled
     {
         $this->dbManager = ApplicationContext::getContainer()->get(DbManager::class);
         $this->mongodb = ApplicationContext::getContainer()->get(MongoDb::class);
+        $this->opCache = ApplicationContext::getContainer()->get(OperatorCacheService::class);
 
         $this->asyncSettledCol = "async_settled";
-        $this->prcountFixCol = "precount_fix";
+        $this->precountFixCol = "precount_fix";
 
         $this->opCode = $opCode;
         $this->vendorCode = $vendorCode;
@@ -235,6 +234,8 @@ class AsyncSettled
                     ], [
                         "bet_amount" => $stakeAmount,
                         "win_amount" => $payoffAmount,
+                        "vendor_bet_amount" => $stakeAmount,
+                        "vendor_win_amount" => $payoffAmount,
                         "settled_time" => $payoffTime,
                         "total" => $total,
                         "updated_at" => new UTCDateTime(),
@@ -595,7 +596,7 @@ class AsyncSettled
                     'updated_at' => '',
                 ];
 
-                $this->mongodb->setPool($this->mongoDefaultPool)->insert($this->prcountFixCol, $pfRecord);
+                $this->mongodb->setPool($this->mongoDefaultPool)->insert($this->precountFixCol, $pfRecord);
 
                 return true;
             }
