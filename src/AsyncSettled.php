@@ -121,7 +121,7 @@ class AsyncSettled
         // 幣別換算配置
         $currencyRates = $this->opCache->currencyRate($opCode);
         if (isset($currencyRates[$vendorCode]) === false) {
-            return ApiResponse::result([], TransactionState::TRANS_CURRENCY_RATE_EMPTY);
+            throw new \Exception(TransactionState::TRANS_CURRENCY_RATE_EMPTY['msg']);
         }
         $this->currencyRate = $currencyRates[$vendorCode];
     }
