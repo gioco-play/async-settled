@@ -205,20 +205,20 @@ class AsyncSettled
      * @param float $vendorBetAmount 下注金額
      * @param int $betTime 下注時間
      * @param float $vendorWinAmount 結算金額
-     * @param int $payoffTime 結算時間
+     * @param int $settledTime 結算時間
      * @param int $total 注單數量
      *
      * @return bool
      * @throws Exception
      */
-    public function payoff(float $vendorBetAmount, int $betTime, float $vendorWinAmount, int $payoffTime, int $total)
+    public function payoff(float $vendorBetAmount, int $betTime, float $vendorWinAmount, int $settledTime, int $total)
     {
         try {
             $hasCreateStake = $this->stake($vendorBetAmount, $betTime);
 
             // $betTime = $this->toTime13($betTime);
-            $payoffTime = $this->toTime13($payoffTime);
-            $updateTime = $payoffTime;
+            $settledTime = $this->toTime13($settledTime);
+            $updateTime = $settledTime;
 
             $playerName = $this->member['player_name'];
             // $memberCode = $this->member["member_code"];
@@ -236,7 +236,7 @@ class AsyncSettled
                         "win_amount" => $this->exchangeRate($vendorWinAmount, '/'),
                         "vendor_bet_amount" => $vendorBetAmount,
                         "vendor_win_amount" => $vendorWinAmount,
-                        "settled_time" => $payoffTime,
+                        "settled_time" => $settledTime,
                         "total" => $total,
                         "updated_at" => new UTCDateTime(),
                         "deleted_at" => new UTCDateTime(),
@@ -258,16 +258,16 @@ class AsyncSettled
     /**
      * 標記為 派彩 (結算) 略過檢查下注
      * @param float $vendorWinAmount 結算金額
-     * @param int $payoffTime 結算時間
+     * @param int $settledTime 結算時間
      * @param int $total 注單數量
      *
      * @return bool
      * @throws Exception
      */
-    public function payoffSkipCheck(float $vendorWinAmount, int $payoffTime, int $total) {
+    public function payoffSkipCheck(float $vendorWinAmount, int $settledTime, int $total) {
         try {
-            $payoffTime = $this->toTime13($payoffTime);
-            $updateTime = $payoffTime;
+            $settledTime = $this->toTime13($settledTime);
+            $updateTime = $settledTime;
 
             $playerName = $this->member['player_name'];
             $asyncSettledLog = $this->asyncSettledLog($this->opCode, $this->vendorCode, $playerName, $this->parentBetId, $this->betId);
@@ -284,7 +284,7 @@ class AsyncSettled
                         [
                             "win_amount" => $this->exchangeRate($vendorWinAmount, '/'),
                             "vendor_win_amount" => $vendorWinAmount,
-                            "settled_time" => $payoffTime,
+                            "settled_time" => $settledTime,
                             "total" => $total,
                             "updated_at" => new UTCDateTime(),
                             "deleted_at" => new UTCDateTime(),
@@ -309,17 +309,17 @@ class AsyncSettled
     /**
      * 標記為 取消下注 (結算)
      * @param int $betTime 下注時間
-     * @param int $payoffTime 結算時間
+     * @param int $settledTime 結算時間
      * @param int $total 注單數量
      *
      * @return bool
      * @throws Exception
      */
-    public function cancelStake(int $betTime, int $payoffTime, int $total)
+    public function cancelStake(int $betTime, int $settledTime, int $total)
     {
         try {
             $hasCreateStake = $this->stake(0, $betTime);
-            $updateTime = $payoffTime;
+            $updateTime = $settledTime;
 
             $playerName = $this->member["player_name"];
             // $memberCode = $this->member["member_code"];
@@ -361,15 +361,15 @@ class AsyncSettled
 
     /**
      * 標記為 取消下注 (結算) 略過檢查下注
-     * @param int $payoffTime 結算時間
+     * @param int $settledTime 結算時間
      * @param int $total 注單數量
      *
      * @return bool
      * @throws Exception
      */
-    public function cancelStakeSkipCheck(int $payoffTime, int $total) {
+    public function cancelStakeSkipCheck(int $settledTime, int $total) {
         try {
-            $updateTime = $payoffTime;
+            $updateTime = $settledTime;
             $playerName = $this->member['player_name'];
             $updateTime = $this->toTime13($updateTime);
 
