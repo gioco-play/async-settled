@@ -155,18 +155,18 @@ class AsyncSettled
 
     /**
      * 標記為 下注 (未結算)
-     * @param float $stakeAmount 下注金額
-     * @param int $stakeTime 下注時間
+     * @param float $vendorBetAmount 下注金額
+     * @param int $betTime 下注時間
      * @return bool
      * @throws Exception
      */
-    public function stake(float $stakeAmount, int $stakeTime)
+    public function stake(float $vendorBetAmount, int $betTime)
     {
         try {
             $playerName = $this->member["player_name"];
             $memberCode = $this->member["member_code"];
 
-            $stakeTime = $this->toTime13($stakeTime);
+            $betTime = $this->toTime13($betTime);
 
             if (empty($this->asyncSettledLog($this->opCode, $this->vendorCode, $playerName, $this->parentBetId, $this->betId))) {
                 $record = [
@@ -176,11 +176,11 @@ class AsyncSettled
                     "bet_id" => $this->betId,
                     "player_name" => $playerName,
                     "member_code" => $memberCode,
-                    "bet_amount" => $this->exchangeRate($stakeAmount, '/'),
+                    "bet_amount" => $this->exchangeRate($vendorBetAmount, '/'),
                     "win_amount" => 0,
-                    "vendor_bet_amount" => $stakeAmount,
+                    "vendor_bet_amount" => $vendorBetAmount,
                     "vendor_win_amount" => 0,
-                    "bet_time" => $stakeTime,
+                    "bet_time" => $betTime,
                     "settled_time" => 0,
                     "status" => TransactionConst::STAKE,
                     "total" => 1,
@@ -202,21 +202,21 @@ class AsyncSettled
 
     /**
      * 標記為 派彩 (結算)
-     * @param float $stakeAmount 下注金額
-     * @param int $stakeTime 下注時間
-     * @param float $payoffAmount 結算金額
+     * @param float $vendorBetAmount 下注金額
+     * @param int $betTime 下注時間
+     * @param float $vendorWinAmount 結算金額
      * @param int $payoffTime 結算時間
      * @param int $total 注單數量
      *
      * @return bool
      * @throws Exception
      */
-    public function payoff(float $stakeAmount, int $stakeTime, float $payoffAmount, int $payoffTime, int $total)
+    public function payoff(float $vendorBetAmount, int $betTime, float $vendorWinAmount, int $payoffTime, int $total)
     {
         try {
-            $hasCreateStake = $this->stake($stakeAmount, $stakeTime);
+            $hasCreateStake = $this->stake($vendorBetAmount, $betTime);
 
-            // $stakeTime = $this->toTime13($stakeTime);
+            // $betTime = $this->toTime13($betTime);
             $payoffTime = $this->toTime13($payoffTime);
             $updateTime = $payoffTime;
 
@@ -232,10 +232,10 @@ class AsyncSettled
                         "parent_bet_id" => $this->parentBetId,
                         "bet_id" => $this->betId,
                     ], [
-                        "bet_amount" => $this->exchangeRate($stakeAmount, '/'),
-                        "win_amount" => $this->exchangeRate($payoffAmount, '/'),
-                        "vendor_bet_amount" => $stakeAmount,
-                        "vendor_win_amount" => $payoffAmount,
+                        "bet_amount" => $this->exchangeRate($vendorBetAmount, '/'),
+                        "win_amount" => $this->exchangeRate($vendorWinAmount, '/'),
+                        "vendor_bet_amount" => $vendorBetAmount,
+                        "vendor_win_amount" => $vendorWinAmount,
                         "settled_time" => $payoffTime,
                         "total" => $total,
                         "updated_at" => new UTCDateTime(),
@@ -257,14 +257,14 @@ class AsyncSettled
 
     /**
      * 標記為 派彩 (結算) 略過檢查下注
-     * @param float $payoffAmount 結算金額
+     * @param float $vendorWinAmount 結算金額
      * @param int $payoffTime 結算時間
      * @param int $total 注單數量
      *
      * @return bool
      * @throws Exception
      */
-    public function payoffSkipCheck(float $payoffAmount, int $payoffTime, int $total) {
+    public function payoffSkipCheck(float $vendorWinAmount, int $payoffTime, int $total) {
         try {
             $payoffTime = $this->toTime13($payoffTime);
             $updateTime = $payoffTime;
@@ -282,8 +282,8 @@ class AsyncSettled
                             'bet_id' => $this->betId,
                         ],
                         [
-                            "win_amount" => $this->exchangeRate($payoffAmount, '/'),
-                            "vendor_win_amount" => $payoffAmount,
+                            "win_amount" => $this->exchangeRate($vendorWinAmount, '/'),
+                            "vendor_win_amount" => $vendorWinAmount,
                             "settled_time" => $payoffTime,
                             "total" => $total,
                             "updated_at" => new UTCDateTime(),
@@ -308,23 +308,23 @@ class AsyncSettled
 
     /**
      * 標記為 取消下注 (結算)
-     * @param int $stakeTime 下注時間
+     * @param int $betTime 下注時間
      * @param int $payoffTime 結算時間
      * @param int $total 注單數量
      *
      * @return bool
      * @throws Exception
      */
-    public function cancelStake(int $stakeTime, int $payoffTime, int $total)
+    public function cancelStake(int $betTime, int $payoffTime, int $total)
     {
         try {
-            $hasCreateStake = $this->stake(0, $stakeTime);
+            $hasCreateStake = $this->stake(0, $betTime);
             $updateTime = $payoffTime;
 
             $playerName = $this->member["player_name"];
             // $memberCode = $this->member["member_code"];
 
-            // $stakeTime = $this->toTime13($stakeTime);
+            // $betTime = $this->toTime13($betTime);
             $updateTime = $this->toTime13($updateTime);
 
             $asyncSettledLog = $this->asyncSettledLog($this->opCode, $this->vendorCode, $playerName, $this->parentBetId, $this->betId);
@@ -409,23 +409,23 @@ class AsyncSettled
 
     /**
      * 標記為 取消派彩 (未結算)
-     * @param float $stakeAmount 下注金額
-     * @param int $stakeTime 下注時間
+     * @param float $vendorBetAmount 下注金額
+     * @param int $betTime 下注時間
      * @param int $updateTime 更新時間
      * @param int $total 注單數量
      *
      * @return bool
      * @throws Exception
      */
-    public function cancelPayoff(float $stakeAmount, int $stakeTime, int $updateTime, int $total)
+    public function cancelPayoff(float $vendorBetAmount, int $betTime, int $updateTime, int $total)
     {
         try {
-            $hasCreateStake = $this->stake(0, $stakeTime);
+            $hasCreateStake = $this->stake(0, $betTime);
 
             $playerName = $this->member["player_name"];
             $memberCode = $this->member["member_code"];
 
-            $stakeTime = $this->toTime13($stakeTime);
+            $betTime = $this->toTime13($betTime);
             $updateTime = $this->toTime13($updateTime);
 
             $asyncSettledLog = $this->asyncSettledLog($this->opCode, $this->vendorCode, $playerName, $this->parentBetId, $this->betId);
@@ -504,17 +504,17 @@ class AsyncSettled
 
     /**
      * 標記為 重新下注 (未結算)
-     * @param float $stakeAmount 下注金額
-     * @param int $stakeTime 下注時間
+     * @param float $vendorBetAmount 下注金額
+     * @param int $betTime 下注時間
      * @param int $total 注單數量
      *
      * @return bool
      * @throws Exception
      */
-    public function reStake(float $stakeAmount, int $stakeTime, int $total)
+    public function reStake(float $vendorBetAmount, int $betTime, int $total)
     {
         try {
-            $hasCreateStake = $this->stake(0, $stakeTime);
+            $hasCreateStake = $this->stake(0, $betTime);
             $updateTime = micro_timestamp();
 
             $playerName = $this->member["player_name"];
@@ -529,8 +529,8 @@ class AsyncSettled
                         "parent_bet_id" => $this->parentBetId,
                         "bet_id" => $this->betId,
                     ], [
-                        "bet_amount" => $this->exchangeRate($stakeAmount, '/'),
-                        "vendor_bet_amount" => $stakeAmount,
+                        "bet_amount" => $this->exchangeRate($vendorBetAmount, '/'),
+                        "vendor_bet_amount" => $vendorBetAmount,
                         "total" => $total,
                         "updated_at" => new UTCDateTime(),
                         "deleted_at" => "",
