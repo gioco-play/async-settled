@@ -93,6 +93,9 @@ class AsyncSettled
      */
     protected $currencyScale = 4;
 
+
+    private $stakeRecord = [];
+
     /**
      * AsyncSettled constructor.
      * @param string $opCode 營商代碼
@@ -163,6 +166,8 @@ class AsyncSettled
     public function stake(float $vendorBetAmount, int $betTime)
     {
         try {
+            $this->stakeRecord = [];
+
             $playerName = $this->member["player_name"];
             $memberCode = $this->member["member_code"];
 
@@ -191,6 +196,7 @@ class AsyncSettled
 
                 $result = $this->dbManager->opMongoDb($this->opCode)->insert($this->asyncSettledCol, $record);
                 if ($result !== false) {
+                    $this->stakeRecord = $record;
                     return true;
                 }
             }
@@ -216,16 +222,19 @@ class AsyncSettled
         try {
             $hasCreateStake = $this->stake($vendorBetAmount, $betTime);
 
-            // $betTime = $this->toTime13($betTime);
             $settledTime = $this->toTime13($settledTime);
             $updateTime = $settledTime;
 
             $playerName = $this->member['player_name'];
-            // $memberCode = $this->member["member_code"];
 
             $asyncSettledLog = $this->asyncSettledLog($this->opCode, $this->vendorCode, $playerName, $this->parentBetId, $this->betId);
+            // 若查不到紀錄，則使用此次建立的 stake 紀錄
+            if (empty($asyncSettledLog) && !empty($this->stakeRecord)) {
+                $asyncSettledLog = $this->stakeRecord;
+            }
+
             if (!empty($asyncSettledLog)) {
-                if ($hasCreateStake || ($updateTime > $asyncSettledLog['settled_time'])) {
+                if ($updateTime > $asyncSettledLog['settled_time']) {
                     $result = $this->dbManager->opMongoDb($this->opCode)->updateRow($this->asyncSettledCol, [
                         "vendor_code" => $this->vendorCode,
                         "player_name" => $playerName,
@@ -320,16 +329,16 @@ class AsyncSettled
         try {
             $hasCreateStake = $this->stake(0, $betTime);
             $updateTime = $settledTime;
-
             $playerName = $this->member["player_name"];
-            // $memberCode = $this->member["member_code"];
-
-            // $betTime = $this->toTime13($betTime);
             $updateTime = $this->toTime13($updateTime);
 
             $asyncSettledLog = $this->asyncSettledLog($this->opCode, $this->vendorCode, $playerName, $this->parentBetId, $this->betId);
+            // 若查不到紀錄，則使用此次建立的 stake 紀錄
+            if (empty($asyncSettledLog) && !empty($this->stakeRecord)) {
+                $asyncSettledLog = $this->stakeRecord;
+            }
             if (!empty($asyncSettledLog)) {
-                if ($hasCreateStake || ($updateTime > $asyncSettledLog["settled_time"])) {
+                if ($updateTime > $asyncSettledLog["settled_time"]) {
                     $result = $this->dbManager->opMongoDb($this->opCode)->updateRow($this->asyncSettledCol, [
                         "vendor_code" => $this->vendorCode,
                         "player_name" => $playerName,
@@ -422,15 +431,16 @@ class AsyncSettled
         try {
             $hasCreateStake = $this->stake(0, $betTime);
 
-            $playerName = $this->member["player_name"];
-            $memberCode = $this->member["member_code"];
-
-            $betTime = $this->toTime13($betTime);
+            $playerName = $this->member['player_name'];
             $updateTime = $this->toTime13($updateTime);
 
             $asyncSettledLog = $this->asyncSettledLog($this->opCode, $this->vendorCode, $playerName, $this->parentBetId, $this->betId);
+            // 若查不到紀錄，則使用此次建立的 stake 紀錄
+            if (empty($asyncSettledLog) && !empty($this->stakeRecord)) {
+                $asyncSettledLog = $this->stakeRecord;
+            }
             if (!empty($asyncSettledLog)) {
-                if ($hasCreateStake || ($updateTime > $asyncSettledLog["settled_time"])) {
+                if ($updateTime > $asyncSettledLog["settled_time"]) {
                     $result = $this->dbManager->opMongoDb($this->opCode)->updateRow($this->asyncSettledCol, [
                         "vendor_code" => $this->vendorCode,
                         "player_name" => $playerName,
@@ -469,7 +479,6 @@ class AsyncSettled
     {
         try {
             $playerName = $this->member['player_name'];
-            $memberCode = $this->member['member_code'];
             $updateTime = $this->toTime13($updateTime);
             $asyncSettledLog = $this->asyncSettledLog($this->opCode, $this->vendorCode, $playerName, $this->parentBetId, $this->betId);
             if (!empty($asyncSettledLog)) {
@@ -516,13 +525,15 @@ class AsyncSettled
         try {
             $hasCreateStake = $this->stake(0, $betTime);
             $updateTime = micro_timestamp();
-
             $playerName = $this->member["player_name"];
-            $memberCode = $this->member["member_code"];
 
             $asyncSettledLog = $this->asyncSettledLog($this->opCode, $this->vendorCode, $playerName, $this->parentBetId, $this->betId);
+            // 若查不到紀錄，則使用此次建立的 stake 紀錄
+            if (empty($asyncSettledLog) && !empty($this->stakeRecord)) {
+                $asyncSettledLog = $this->stakeRecord;
+            }
             if (!empty($asyncSettledLog)) {
-                if ($hasCreateStake || ($updateTime > $asyncSettledLog["settled_time"])) {
+                if ($updateTime > $asyncSettledLog["settled_time"]) {
                     $result = $this->dbManager->opMongoDb($this->opCode)->updateRow($this->asyncSettledCol, [
                         "vendor_code" => $this->vendorCode,
                         "player_name" => $playerName,
