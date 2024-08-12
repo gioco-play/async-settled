@@ -8,7 +8,7 @@ use Exception;
 use GiocoPlus\Mongodb\MongoDb;
 use GiocoPlus\PrismConst\Constant\TransactionConst;
 use GiocoPlus\PrismConst\State\TransactionState;
-use GiocoPlus\PrismConst\Tool\ApiResponse;
+use GiocoPlus\PrismPlus\Helper\Log;
 use GiocoPlus\PrismPlus\Repository\DbManager;
 use GiocoPlus\PrismPlus\Service\OperatorCacheService;
 use Hyperf\Utils\ApplicationContext;
@@ -114,8 +114,8 @@ class AsyncSettled
         $this->asyncSettledCol = "async_settled";
         $this->precountFixCol = "precount_fix";
 
-        $this->opCode = $opCode;
-        $this->vendorCode = $vendorCode;
+        $this->opCode = strtoupper($opCode);
+        $this->vendorCode = strtolower($vendorCode);
         $this->gameCode = $gameCode;
         $this->parentBetId = $parentBetId;
         $this->betId = $betId;
@@ -255,7 +255,11 @@ class AsyncSettled
                         $this->precountFix($this->opCode, $this->vendorCode, $this->parentBetId, $this->betId, $asyncSettledLog);
                         return true;
                     }
+                } else {
+                    Log::info("payoff update fail, parent_bet_id: {$this->parentBetId} | bet: {$this->betId} | updateTime: {$updateTime} | oldTime: {$asyncSettledLog['settled_time']} | ", $asyncSettledLog);
                 }
+            } else {
+                Log::info("payoff update fail asyncSettledLog empty, parent_bet_id: {$this->parentBetId} | bet: {$this->betId}", $asyncSettledLog);
             }
         } catch(\Throwable $th) {
             throw new Exception($th->getMessage());
