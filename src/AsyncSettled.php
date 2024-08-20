@@ -166,8 +166,6 @@ class AsyncSettled
     public function stake(float $vendorBetAmount, int $betTime)
     {
         try {
-            $this->stakeRecord = [];
-
             $playerName = $this->member["player_name"];
             $memberCode = $this->member["member_code"];
 
@@ -196,6 +194,7 @@ class AsyncSettled
 
                 $result = $this->dbManager->opMongoDb($this->opCode)->insert($this->asyncSettledCol, $record);
                 if ($result !== false) {
+                    // 暫存 stake
                     $this->stakeRecord = $record;
                     return true;
                 }
@@ -256,10 +255,10 @@ class AsyncSettled
                         return true;
                     }
                 } else {
-                    Log::info("payoff update fail, parent_bet_id: {$this->parentBetId} | bet: {$this->betId} | updateTime: {$updateTime} | oldTime: {$asyncSettledLog['settled_time']} | ", $asyncSettledLog);
+                    Log::info("asyncSettled payoff update fail, parent_bet_id: {$this->parentBetId} | bet: {$this->betId} | updateTime: {$updateTime} | oldTime: {$asyncSettledLog['settled_time']} | ", $asyncSettledLog);
                 }
             } else {
-                Log::info("payoff update fail asyncSettledLog empty, parent_bet_id: {$this->parentBetId} | bet: {$this->betId}", $asyncSettledLog);
+                Log::info("asyncSettled payoff update fail asyncSettledLog empty, parent_bet_id: {$this->parentBetId} | bet: {$this->betId}", $asyncSettledLog);
             }
         } catch(\Throwable $th) {
             throw new Exception($th->getMessage());
